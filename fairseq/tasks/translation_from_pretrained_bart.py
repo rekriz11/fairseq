@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import torch
-from fairseq import utils
+from fairseq import utils, search
 from fairseq.data import LanguagePairDataset
 
 from . import register_task
