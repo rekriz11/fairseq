@@ -175,6 +175,7 @@ class TranslationFromPretrainedBARTTask(TranslationTask):
                 temperature=getattr(args, "temperature", 1.0),
                 match_source_len=getattr(args, "match_source_len", False),
                 no_repeat_ngram_size=getattr(args, "no_repeat_ngram_size", 0),
+                search_strategy=search_strategy,
                 eos=self.tgt_dict.index("[{}]".format(self.args.target_lang)),
             )
 
