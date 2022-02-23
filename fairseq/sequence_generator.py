@@ -181,8 +181,9 @@ class SequenceGenerator(nn.Module):
             sample (dict): batch
             prefix_tokens (torch.LongTensor, optional): force decoder to begin
                 with these tokens
-            constraints (torch.LongTensor, optional): force decoder to include
-                the list of constraints
+            constraints ({"positive": torch.LongTensor, "negative": torch.LongTensor}):
+                force decoder to include the list of positive constraints and exclude
+                the list of negative constraints.
             bos_token (int, optional): beginning of sentence token
                 (default: self.eos)
         """
@@ -192,7 +193,7 @@ class SequenceGenerator(nn.Module):
         self,
         sample: Dict[str, Dict[str, Tensor]],
         prefix_tokens: Optional[Tensor] = None,
-        constraints: Optional[Tensor] = None,
+        constraints: Optional[Dict[str, Tensor]] = None,
         bos_token: Optional[int] = None,
     ):
         incremental_states = torch.jit.annotate(
@@ -237,7 +238,7 @@ class SequenceGenerator(nn.Module):
 
         if constraints is not None and not self.search.supports_constraints:
             raise NotImplementedError(
-                "Target-side constraints were provided, but search method doesn't support them"
+                "Target-side constraints or negative constraints were provided, but search method doesn't support them"
             )
 
         # Initialize constraints, when active
@@ -269,6 +270,7 @@ class SequenceGenerator(nn.Module):
         scores = (
             torch.zeros(bsz * beam_size, max_len + 1).to(src_tokens).float()
         )  # +1 for eos; pad is never chosen for scoring
+        
         tokens = (
             torch.zeros(bsz * beam_size, max_len + 2)
             .to(src_tokens)
@@ -295,6 +297,13 @@ class SequenceGenerator(nn.Module):
         # a boolean array indicating if the sentence at the index is finished or not
         finished = [False for i in range(bsz)]
         num_remaining_sent = bsz  # number of sentences remaining
+
+        # Initialize constraints, when active
+        if constraints is not None and self.search.supports_constraints:
+            assert (
+                constraints["positive"] is not None and constraints["negative"] is not None
+            ), "both 'positive' and 'negative' constraints should not be None under constraint supported condition"
+            self.search.init_constraints(constraints["positive"], constraints["negative"], beam_size, cand_size)
 
         # number of candidate hypos per step
         cand_size = 2 * beam_size  # 2 x beam size in case half are EOS

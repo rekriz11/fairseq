@@ -35,7 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger("fairseq_cli.interactive")
 
 
-Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints")
+Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints negative_constraints")
 Translation = namedtuple("Translation", "src_str hypos pos_scores alignments")
 
 
@@ -57,12 +57,20 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         return encode_fn(x)
 
     if cfg.generation.constraints:
-        # Strip (tab-delimited) contraints, if present, from input lines,
-        # store them in batch_constraints
+        # Strip (tab-delimited) contraints and negative constraints, if present, from input lines,
+        # "&&"-delimited two types of constraint,
+        # store them in batch_constraints and batch_negative_constraints
         batch_constraints = [list() for _ in lines]
+        batch_negative_constraints = [list() for _ in lines]
         for i, line in enumerate(lines):
             if "\t" in line:
-                lines[i], *batch_constraints[i] = line.split("\t")
+                if "&&" in line:
+                    line_constraint, negative_constraint = line.split("&&")
+                    lines[i], *batch_constraints[i] = line_constraint.split("\t")
+                    *batch_negative_constraints[i], = negative_constraint.split("\t")
+                else:
+                    # By default, only use positive constraints
+                    lines[i], *batch_constraints[i] = line.split("\t")
 
         # Convert each List[str] to List[Tensor]
         for i, constraint_list in enumerate(batch_constraints):
@@ -72,19 +80,30 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                     append_eos=False,
                     add_if_not_exist=False,
                 )
-                for constraint in constraint_list
+                for constraint in constraint_list if constraint
+            ]
+        for i, negative_constraint_list in enumerate(batch_negative_constraints):
+            batch_negative_constraints[i] = [
+                task.target_dictionary.encode_line(
+                    encode_fn_target(negative_constraint),
+                    append_eos=False,
+                    add_if_not_exist=False,
+                )
+                for negative_constraint in negative_constraint_list if negative_constraint
             ]
 
     if cfg.generation.constraints:
         constraints_tensor = pack_constraints(batch_constraints)
+        negative_constraints_tensor = pack_constraints(batch_negative_constraints)
+        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor}
     else:
-        constraints_tensor = None
+        constraints = None
 
     tokens, lengths = task.get_interactive_tokens_and_lengths(lines, encode_fn)
 
     itr = task.get_batch_iterator(
         dataset=task.build_dataset_for_inference(
-            tokens, lengths, constraints=constraints_tensor
+            tokens, lengths, constraints=constraints
         ),
         max_tokens=cfg.dataset.max_tokens,
         max_sentences=cfg.dataset.batch_size,
@@ -96,12 +115,14 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         src_tokens = batch["net_input"]["src_tokens"]
         src_lengths = batch["net_input"]["src_lengths"]
         constraints = batch.get("constraints", None)
+        negative_constraints = batch.get("negative_constraints", None)
 
         yield Batch(
             ids=ids,
             src_tokens=src_tokens,
             src_lengths=src_lengths,
             constraints=constraints,
+            negative_constraints=negative_constraints,
         )
 
 
@@ -211,12 +232,20 @@ def main(cfg: FairseqConfig):
             src_tokens = batch.src_tokens
             src_lengths = batch.src_lengths
             constraints = batch.constraints
+            negative_constraints = batch.negative_constraints
             if use_cuda:
                 src_tokens = src_tokens.cuda()
                 src_lengths = src_lengths.cuda()
                 if constraints is not None:
                     constraints = constraints.cuda()
-
+                if negative_constraints is not None:
+                    negative_constraints = negative_constraints.cuda()
+            if constraints is not None and negative_constraints is not None:
+                constraints_dict = dict()
+                constraints_dict["positive"] = constraints
+                constraints_dict["negative"] = negative_constraints
+            else:
+                constraints_dict = None
             sample = {
                 "net_input": {
                     "src_tokens": src_tokens,
@@ -225,16 +254,19 @@ def main(cfg: FairseqConfig):
             }
             translate_start_time = time.time()
             translations = task.inference_step(
-                generator, models, sample, constraints=constraints
+                generator, models, sample, constraints=constraints_dict
             )
             translate_time = time.time() - translate_start_time
             total_translate_time += translate_time
             list_constraints = [[] for _ in range(bsz)]
+            list_negative_constraints = [[] for _ in range(bsz)]
             if cfg.generation.constraints:
                 list_constraints = [unpack_constraints(c) for c in constraints]
+                list_negative_constraints = [unpack_constraints(c) for c in negative_constraints]
             for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):
                 src_tokens_i = utils.strip_pad(src_tokens[i], tgt_dict.pad())
                 constraints = list_constraints[i]
+                negative_constraints = list_negative_constraints[i]
                 results.append(
                     (
                         start_id + id,
@@ -242,6 +274,7 @@ def main(cfg: FairseqConfig):
                         hypos,
                         {
                             "constraints": constraints,
+                            "negative_constraints": negative_constraints,
                             "time": translate_time / len(translations),
                         },
                     )
@@ -259,6 +292,11 @@ def main(cfg: FairseqConfig):
                         "C-{}\t{}".format(
                             id_,
                             tgt_dict.string(constraint, cfg.common_eval.post_process),
+                        )
+                    )
+                for negative_constraint in info["negative_constraints"]:
+                    print("N-{}\t{}".format(
+                            id_, tgt_dict.string(negative_constraint, cfg.common_eval.post_process)
                         )
                     )
 

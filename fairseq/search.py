@@ -62,17 +62,26 @@ class Search(nn.Module):
         self.src_lengths = src_lengths
 
     @torch.jit.export
-    def init_constraints(self, batch_constraints: Optional[Tensor], beam_size: int):
-        """Initialize constraint states for constrained decoding (if supported).
+    def init_constraints(
+         self, batch_constraints: Optional[Tensor],
+         batch_negative_constraints: Optional[Tensor],
+         beam_size: int,
+         cand_size: int
+     ):
+         """Initialize constraint and negative constraint states for constrained decoding (if supported).
 
-        Args:
-            batch_constraints: (torch.Tensor, optional)
-                the list of constraints, in packed form
-            beam_size: (int)
-                the beam size
-        Returns:
-            *encoder_out* rearranged according to *new_order*
-        """
+         Args:
+             batch_constraints: (torch.Tensor, optional)
+                 the list of constraints, in packed form
+             batch_negative_constraints: (torch.Tensor, optional)
+                 the list of negative constraints, in packed form
+             beam_size: (int)
+                 the beam size
+             cand_size: (int)
+                 double of real beam size, for eos selection
+         Returns:
+             *encoder_out* rearranged according to *new_order*
+         """
         pass
 
     def prune_sentences(self, batch_idxs: Tensor):
@@ -98,6 +107,22 @@ class Search(nn.Module):
               should be kept.
         """
         pass
+
+    def update_negative_constraints(self, cand_indices: Tensor, cand_beams: Tensor):
+         """
+         Updates the negative constraint states by selecting the beam items that are retained.
+         This is called at each time step of sequence_generator._generate() , and will
+         retrain 2 * {beam_size} candidate states through repeated selection.
+
+         Args:
+             cand_indices: (batch size, 2*beam size)
+               list of integers denoting, for each sentence, which tokens
+               should be selected for current step.
+             cand_beams: (batch size, 2*beam size)
+               list of integers denoting, for each sentence, which beam candidate items
+               should be kept.
+         """
+         pass
 
 
 class BeamSearch(Search):
@@ -223,7 +248,9 @@ class LexicallyConstrainedBeamSearch(Search):
     This is accomplished by maintaining, for each beam hypothesis, a
     ConstraintState object (see constraints.py) that tracks which
     constraints have been generated and using this information to
-    shape the beam for each input sentence.
+    shape the beam for each input sentence, and a NegativeConstraintStates
+    object tracks which tokens have been selected and using this information
+    to set corresponding probability as -inf
     """
 
     def __init__(self, tgt_dict, representation):
@@ -234,8 +261,15 @@ class LexicallyConstrainedBeamSearch(Search):
         self.supports_constraints = True
 
     @torch.jit.export
-    def init_constraints(self, batch_constraints: Optional[Tensor], beam_size: int):
+    def init_constraints(
+         self,
+         batch_constraints: Optional[Tensor],
+         batch_negative_constraints: Optional[Tensor],
+         beam_size: int,
+         cand_size: int
+     ):
         self.constraint_states = []
+        self.negative_constraint_states = []
         for constraint_tensor in batch_constraints:
             if self.representation == "ordered":
                 constraint_state = OrderedConstraintState.create(constraint_tensor)
@@ -243,21 +277,93 @@ class LexicallyConstrainedBeamSearch(Search):
                 constraint_state = UnorderedConstraintState.create(constraint_tensor)
 
             self.constraint_states.append([constraint_state for i in range(beam_size)])
+        for negative_constraint_tensor in batch_negative_constraints:
+            negative_constraint_state = UnorderedConstraintState.create(negative_constraint_tensor)
+            self.negative_constraint_states.append([negative_constraint_state for i in range(cand_size)])
 
     @torch.jit.export
     def prune_sentences(self, batch_idxs: Tensor):
         self.constraint_states = [
             self.constraint_states[i] for i in batch_idxs.tolist()
         ]
+        self.negative_constraint_states = [
+            self.negative_constraint_states[i] for i in batch_idxs.tolist()
+        ]
 
     @torch.jit.export
     def update_constraints(self, active_hypos: Tensor):
+        self.active_hypos = active_hypos  # maintain active_hypos for update_negative_constraints' usage
         if self.constraint_states:
             batch_size = active_hypos.size(0)
             for sentid in range(batch_size):
                 self.constraint_states[sentid] = [
                     self.constraint_states[sentid][i] for i in active_hypos[sentid]
                 ]
+
+    @torch.jit.export
+    def update_negative_constraints(self, cand_indices: Tensor, cand_beams: Tensor):
+        if self.negative_constraint_states:
+            batch_size = cand_beams.size(0)
+            cand_size = cand_beams.size(1)
+            # step 1: select the negative_constraint_states being tracked
+            # step 2: update each state according to cand_indices
+            for sentid in range(batch_size):
+                assert cand_size == len(self.negative_constraint_states[sentid])
+                self.negative_constraint_states[sentid] = [
+                    self.negative_constraint_states[sentid][i].advance(cand_indices[sentid][_index])
+                    for _index, i in enumerate(cand_beams[sentid])]
+
+    @torch.jit.export
+    def get_negative_tokens(self, active_hypos):
+        """
+        Get the negative tokens from constraint states selected by active_hypos.
+        This is called at each time step of sequence_generator._generate(), and will
+        return a list of negative tokens coordinates.
+
+        Args:
+            active_hypos: (batch size, beam size)
+              list of integers denoting, for each sentence, which beam candidate items
+              are selected, and use that information to select corresponding items from
+              negative constraint states ..
+        Returns:
+            a list of negative tokens coordinates [(candidate items order, negative token id), ...]
+        """
+        result_indices = []
+        _index = 0
+        for sent_id, sent_state in enumerate(self.negative_constraint_states):
+            for hypothesis_state_id in active_hypos[sent_id]:
+                hypothesis_state = sent_state[hypothesis_state_id]
+                negative_ids = hypothesis_state.negative_tokens()
+                if negative_ids:
+                    for _id in negative_ids:
+                        result_indices.append([_index, _id])
+                _index += 1
+        return result_indices
+
+    @torch.jit.export
+    def process_negative_probs(self, lprobs, active_hypos):
+        """
+        set the probabilities of negative constraints to -inf
+
+        Args:
+            lprobs: (batch size*beam size, vocab_size)
+              list of integers denoting, for each sentence, which tokens
+              should be selected for current step.
+            active_hypos: (batch size, beam size)
+              list of integers denoting, for each sentence, which beam candidate items
+              are selected, and use that information to select corresponding items from
+              negative constraint states ..
+        Returns:
+            lprobs: (batch size*beam size, vocab_size)
+            which corresponding positions have been set as -inf
+        """
+        negative_indices = self.get_negative_tokens(active_hypos)
+        if len(negative_indices) > 0:
+            negative_indices = torch.tensor(negative_indices, device=lprobs.device)
+            if negative_indices.numel():
+                inf_value = torch.ones(negative_indices.shape[0], device=lprobs.device)*-math.inf
+                lprobs.index_put_(tuple(negative_indices.t()), inf_value)
+        return lprobs
 
     @torch.jit.export
     def step(
@@ -321,10 +427,27 @@ class LexicallyConstrainedBeamSearch(Search):
                 ] = -math.inf
 
         if step == 0:
+            # initialize negative buffers
+            # help to select none ended candidates
+            self.active_hypos = torch.arange(beam_size).repeat(batch_size, 1).to(device).long()
+            # update negative constraints to handle <s>
+            # note that prev_output_tokens[:, 0] may be EOS, that depends
+            # if you want to avoid phrase like '<s> Mach@@ ine',
+            # the first position of prev_output_tokens should be set as BOS.
+            init_cand_indices = prev_output_tokens[:, 0].view(batch_size, -1).repeat(1, 2)
+            init_cand_beams = torch.arange(beam_size*2).repeat(batch_size, 1).to(device).long()
+            self.update_negative_constraints(init_cand_indices, init_cand_beams)
+            # set the probabilities of negative constraints to -inf
+            lprobs = self.process_negative_probs(lprobs.view(batch_size * beam_size, -1), self.active_hypos)
+            lprobs = lprobs.view(batch_size, -1, vocab_size)
             # at the first step all hypotheses are equally likely, so use
             # only the first beam entry for each batch item
             lprobs = lprobs[:, ::beam_size, :].contiguous()
         else:
+            # self.active_hypos now is available
+            assert hasattr(self, 'active_hypos')
+            lprobs = self.process_negative_probs(lprobs.view(batch_size * beam_size, -1), self.active_hypos)
+            lprobs = lprobs.view(batch_size, -1, vocab_size)
             # make probs contain cumulative scores for each hypothesis
             assert scores is not None
             lprobs = lprobs + scores[:, :, step - 1].unsqueeze(-1)
@@ -374,7 +497,9 @@ class LexicallyConstrainedBeamSearch(Search):
             new_indices_buf[sentno] = indices
             new_beams_buf[sentno] = beams
             self.constraint_states[sentno] = new_states
-
+        # update states for next step
+        self.update_negative_constraints(new_indices_buf, new_beams_buf)
+        
         return new_scores_buf, new_indices_buf, new_beams_buf
 
     @torch.jit.export
