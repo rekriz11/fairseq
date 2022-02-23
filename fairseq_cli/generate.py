@@ -203,7 +203,7 @@ def _main(cfg: DictConfig, output_file):
             constraints_dict = dict()
             constraints_dict["positive"] = constraints
             constraints_dict["negative"] = negative_constraints
-         else:
+        else:
             constraints_dict = None
 
         gen_timer.start()
