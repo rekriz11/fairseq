@@ -68,20 +68,20 @@ class Search(nn.Module):
          beam_size: int,
          cand_size: int
      ):
-         """Initialize constraint and negative constraint states for constrained decoding (if supported).
+        """Initialize constraint and negative constraint states for constrained decoding (if supported).
 
-         Args:
-             batch_constraints: (torch.Tensor, optional)
-                 the list of constraints, in packed form
-             batch_negative_constraints: (torch.Tensor, optional)
-                 the list of negative constraints, in packed form
-             beam_size: (int)
-                 the beam size
-             cand_size: (int)
-                 double of real beam size, for eos selection
-         Returns:
-             *encoder_out* rearranged according to *new_order*
-         """
+        Args:
+            batch_constraints: (torch.Tensor, optional)
+                the list of constraints, in packed form
+            batch_negative_constraints: (torch.Tensor, optional)
+                the list of negative constraints, in packed form
+            beam_size: (int)
+                the beam size
+            cand_size: (int)
+                double of real beam size, for eos selection
+        Returns:
+            *encoder_out* rearranged according to *new_order*
+        """
         pass
 
     def prune_sentences(self, batch_idxs: Tensor):
@@ -109,20 +109,20 @@ class Search(nn.Module):
         pass
 
     def update_negative_constraints(self, cand_indices: Tensor, cand_beams: Tensor):
-         """
-         Updates the negative constraint states by selecting the beam items that are retained.
-         This is called at each time step of sequence_generator._generate() , and will
-         retrain 2 * {beam_size} candidate states through repeated selection.
+        """
+        Updates the negative constraint states by selecting the beam items that are retained.
+        This is called at each time step of sequence_generator._generate() , and will
+        retrain 2 * {beam_size} candidate states through repeated selection.
 
-         Args:
-             cand_indices: (batch size, 2*beam size)
-               list of integers denoting, for each sentence, which tokens
-               should be selected for current step.
-             cand_beams: (batch size, 2*beam size)
-               list of integers denoting, for each sentence, which beam candidate items
-               should be kept.
-         """
-         pass
+        Args:
+            cand_indices: (batch size, 2*beam size)
+              list of integers denoting, for each sentence, which tokens
+              should be selected for current step.
+            cand_beams: (batch size, 2*beam size)
+              list of integers denoting, for each sentence, which beam candidate items
+              should be kept.
+        """
+        pass
 
 
 class BeamSearch(Search):
