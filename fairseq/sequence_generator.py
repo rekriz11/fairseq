@@ -242,7 +242,7 @@ class SequenceGenerator(nn.Module):
             )
 
         # Initialize constraints, when active
-        self.search.init_constraints(constraints, beam_size)
+        #self.search.init_constraints(constraints, beam_size)
 
         max_len: int = -1
         if self.match_source_len:
