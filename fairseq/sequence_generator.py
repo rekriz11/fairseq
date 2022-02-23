@@ -298,15 +298,15 @@ class SequenceGenerator(nn.Module):
         finished = [False for i in range(bsz)]
         num_remaining_sent = bsz  # number of sentences remaining
 
+        # number of candidate hypos per step
+        cand_size = 2 * beam_size  # 2 x beam size in case half are EOS
+
         # Initialize constraints, when active
         if constraints is not None and self.search.supports_constraints:
             assert (
                 constraints["positive"] is not None and constraints["negative"] is not None
             ), "both 'positive' and 'negative' constraints should not be None under constraint supported condition"
             self.search.init_constraints(constraints["positive"], constraints["negative"], beam_size, cand_size)
-
-        # number of candidate hypos per step
-        cand_size = 2 * beam_size  # 2 x beam size in case half are EOS
 
         # offset arrays for converting between different indexing schemes
         bbsz_offsets = (
