@@ -174,7 +174,7 @@ class SequenceGenerator(nn.Module):
 
     ## Added constrained generation helper function from Huggingface GPT-2 example
     ## https://colab.research.google.com/drive/1ezT24sogpVyr2HJLOvXHzjv61JZJ1gMT?usp=sharing#scrollTo=KwJ4OLx6CRqc
-    def set_scores_to_inf_for_banned_tokens(scores, banned_tokens):
+    def set_scores_to_inf_for_banned_tokens(self, scores, banned_tokens):
         """
         Modifies the scores in place by setting the banned token positions to `-inf`. Banned token is expected to be a
         list of list of banned tokens to ban in the format [[batch index, vocabulary position],...
