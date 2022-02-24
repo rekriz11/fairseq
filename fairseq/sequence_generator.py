@@ -197,15 +197,16 @@ class SequenceGenerator(nn.Module):
                     seen_mask_list.append([beam_idx, token])
 
             seen_mask = torch.LongTensor(seen_mask_list)
-            print("banned_mask shape: {}".format(banned_mask.shape))
+            print("seen_mask shape: {}".format(seen_mask.shape))
             a = bbb
             indices = torch.ones(len(seen_mask))
 
             seen_mask = (
                 torch.sparse.LongTensor(seen_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
             )
-            #print("banned_mask shape after: {}".format(banned_mask.shape))
-            scores = scores.masked_fill(banned_mask, -float("inf"))
+            print("seen_mask shape: {}, {}".format(seen_mask.shape, seen_mask))
+            a = bbb
+            scores = scores.masked_fill(seen_mask, -float("inf"))
             return scores
         except IndexError:
             return scores
