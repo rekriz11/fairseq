@@ -272,7 +272,6 @@ def main(cfg: FairseqConfig):
                 list_constraints = [unpack_constraints(c) for c in constraints]
                 list_negative_constraints = [unpack_constraints(c, cfg.generation.constraints) for c in negative_constraints]
                 print("unpacked negative constraints: {}".format(list_negative_constraints))
-                a = bbb
             for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):
                 src_tokens_i = utils.strip_pad(src_tokens[i], tgt_dict.pad())
                 constraints = list_constraints[i]
