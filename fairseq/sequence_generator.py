@@ -191,10 +191,9 @@ class SequenceGenerator(nn.Module):
                     seen_mask_list.append([beam_idx, token])
             if not seen_mask_list:
                 return scores
-            ## Adds <s>, <unk>, </s>, we don't want to set these to -inf here
+            ## Adds </s>, we don't want to set that to -inf here
             for beam_idx in range(scores.shape[0]):
-                for token in [0, 1, 2, 3]:
-                    seen_mask_list.append([beam_idx, token])
+                seen_mask_list.append([beam_idx, 3])
 
             seen_mask = torch.LongTensor(seen_mask_list)
             #print("seen_mask shape: {}".format(seen_mask.shape))
@@ -412,9 +411,6 @@ class SequenceGenerator(nn.Module):
             lprobs[:, self.pad] = -math.inf  # never select pad
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
 
-            for i in range(10):
-                print("Special token {}: {}".format(i, target_dictionary.string(torch.tensor([i]))))
-
             ### Sets scores to negative infinity for banned tokens ###
             #print("Constraints dict: {}".format(constraints))
             #print("lprobs shape: {}".format(lprobs.shape))
@@ -422,9 +418,6 @@ class SequenceGenerator(nn.Module):
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-
-            print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
-            a = bbb
             
             # handle max length constraint
             if step >= max_len:
@@ -477,7 +470,8 @@ class SequenceGenerator(nn.Module):
 
             #print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
             #cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
-            #print("cand_toks: {}".format(cand_toks))
+            print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
+            print("cand_toks: {}\tcand_scores: {}".format(cand_toks,cand_scores))
             
 
             # cand_bbsz_idx contains beam indices for the top candidate
