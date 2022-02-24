@@ -193,7 +193,8 @@ class SequenceGenerator(nn.Module):
                 return scores
             ## Adds </s>, we don't want to set that to -inf here
             for beam_idx in range(scores.shape[0]):
-                seen_mask_list.append([beam_idx, 3])
+                for tok in range(4):
+                    seen_mask_list.append([beam_idx, tok])
 
             seen_mask = torch.LongTensor(seen_mask_list)
             #print("seen_mask shape: {}".format(seen_mask.shape))
