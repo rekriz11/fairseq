@@ -193,7 +193,7 @@ class SequenceGenerator(nn.Module):
                 return scores
             ## Adds <s>, <unk>, </s>, we don't want to set these to -inf here
             for beam_idx in range(scores.shape[0]):
-                for token in [0, 1, 2]:
+                for token in [0, 1, 2, 3]:
                     seen_mask_list.append([beam_idx, token])
 
             seen_mask = torch.LongTensor(seen_mask_list)
@@ -412,8 +412,8 @@ class SequenceGenerator(nn.Module):
             lprobs[:, self.pad] = -math.inf  # never select pad
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
 
-            special_tokens = target_dictionary.string(torch.tensor([i for i in range(10)]))
-            print("Special tokens: {}".format(special_tokens))
+            for i in range(10):
+                print("Special token {}: {}".format(i, target_dictionary.string(torch.tensor([i]))))
 
             ### Sets scores to negative infinity for banned tokens ###
             #print("Constraints dict: {}".format(constraints))
