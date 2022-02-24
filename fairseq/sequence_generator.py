@@ -410,7 +410,8 @@ class SequenceGenerator(nn.Module):
             #print("negative_constraints: {}".format(constraints['negative']))
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
-            #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+            print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+            a = bbb
 
             # handle max length constraint
             if step >= max_len:
