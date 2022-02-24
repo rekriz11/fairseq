@@ -469,8 +469,8 @@ class SequenceGenerator(nn.Module):
             )
 
             #print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
-            #cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
-            print("\n\ncand_toks: {}\tcand_scores: {}".format(cand_toks,cand_scores))
+            cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
+            print("\n\ncand_toks: {}\tcand_scores: {}".format(cand_toks, cand_scores))
             print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
             
 
