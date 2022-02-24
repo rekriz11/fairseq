@@ -93,12 +93,13 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
             print("negative_constraint_list {} after: {}".format(i, batch_negative_constraints[i]))
-        a = bbb
 
     if cfg.generation.constraints:
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
         constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor}
+        print("negative_constraints_tensor after packing: {}".format(negative_constraints_tensor))
+        a = bbb
     else:
         constraints = None
 
