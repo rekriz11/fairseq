@@ -398,15 +398,12 @@ class SequenceGenerator(nn.Module):
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
 
             ### Sets scores to negative infinity for banned tokens ###
-            try:
-                #print("lprobs shape: {}".format(lprobs.shape))
-                #print("negative_constraints: {}".format(constraints['negative']))
-                #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-                lprobs = self.set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative_masked'])
-                #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-                #a = bbb
-            except KeyError:
-                a = 1
+            #print("lprobs shape: {}".format(lprobs.shape))
+            #print("negative_constraints: {}".format(constraints['negative']))
+            #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+            lprobs = self.set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative_masked'])
+            #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+            #a = bbb
 
             # handle max length constraint
             if step >= max_len:
