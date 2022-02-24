@@ -183,7 +183,7 @@ class SequenceGenerator(nn.Module):
             scores: logits distribution of shape (batch size, vocabulary size)
             banned_tokens: list of list of tokens to ban of length (batch_size)
         """
-        print("scores shape: {}, banned_tokens shape: {}".format(scores.shape, banned_tokens.shape))
+        #print("scores shape: {}, banned_tokens shape: {}".format(scores.shape, banned_tokens.shape))
         banned_mask_list = []
         for beam_idx in range(scores.shape[0]):
             for token in banned_tokens[0]:
@@ -192,13 +192,13 @@ class SequenceGenerator(nn.Module):
             return scores
 
         banned_mask = torch.LongTensor(banned_mask_list)
-        print("banned_mask shape: {}, {}".format(banned_mask.shape, banned_mask))
+        #print("banned_mask shape: {}, {}".format(banned_mask.shape, banned_mask))
         indices = torch.ones(len(banned_mask))
 
         banned_mask = (
             torch.sparse.LongTensor(banned_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
         )
-        print("banned_mask shape after: {}".format(banned_mask.shape))
+        #print("banned_mask shape after: {}".format(banned_mask.shape))
         scores = scores.masked_fill(banned_mask, -float("inf"))
         return scores
 
@@ -397,13 +397,16 @@ class SequenceGenerator(nn.Module):
             lprobs[:, self.pad] = -math.inf  # never select pad
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
 
-            ### TEST CODE ###
-            print("lprobs shape: {}".format(lprobs.shape))
-            print("negative_constraints: {}".format(constraints['negative']))
-            print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-            lprobs = self.set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative'])
-            print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-            a = bbb
+            ### Sets scores to negative infinity for banned tokens ###
+            try:
+                #print("lprobs shape: {}".format(lprobs.shape))
+                #print("negative_constraints: {}".format(constraints['negative']))
+                #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+                lprobs = self.set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative_masked'])
+                #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+                #a = bbb
+            except KeyError:
+                a = 1
 
             # handle max length constraint
             if step >= max_len:
