@@ -463,15 +463,16 @@ class SequenceGenerator(nn.Module):
             )
 
             print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
-            print("Index example: {}\t{}".format(cand_indices[0][0], torch.tensor([cand_indices[0][0]])))
             cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
             print("cand_toks: {}".format(cand_toks))
-            a = bbb
+            
 
             # cand_bbsz_idx contains beam indices for the top candidate
             # hypotheses, with a range of values: [0, bsz*beam_size),
             # and dimensions: [bsz, cand_size]
             cand_bbsz_idx = cand_beams.add(bbsz_offsets)
+            print("cand_bbsz_idx: {}".format(cand_bbsz_idx))
+            a = bbb
 
             # finalize hypotheses that end in eos
             # Shape of eos_mask: (batch size, beam size)
