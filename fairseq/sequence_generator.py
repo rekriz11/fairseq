@@ -469,9 +469,9 @@ class SequenceGenerator(nn.Module):
                 original_batch_idxs,
             )
 
-            print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
+            #print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
             cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
-            print("cand_toks: {}".format(cand_toks))
+            #print("cand_toks: {}".format(cand_toks))
             
 
             # cand_bbsz_idx contains beam indices for the top candidate
@@ -614,8 +614,8 @@ class SequenceGenerator(nn.Module):
                 cand_scores, dim=1, index=active_hypos
             )
             print("Updated beam candidates: ")
-            for ind, toks in enumerate(tokens):
-                new_toks = utils.strip_pad(toks, target_dictionary.pad())
+            for ind in range(1):
+                new_toks = utils.strip_pad(tokens[i], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
                 print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
             # Update constraints based on which candidates were selected for the next beam
