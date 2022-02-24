@@ -204,7 +204,7 @@ class SequenceGenerator(nn.Module):
             seen_mask = (
                 torch.sparse.LongTensor(seen_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
             )
-            print("seen_mask shape: {}, {}".format(seen_mask.shape, seen_mask))
+            print("seen_mask shape: {}\nseen_mask{}".format(seen_mask.shape, seen_mask))
             a = bbb
             scores = scores.masked_fill(seen_mask, -float("inf"))
             return scores
