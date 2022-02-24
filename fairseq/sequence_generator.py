@@ -192,7 +192,9 @@ class SequenceGenerator(nn.Module):
             return scores
 
         banned_mask = torch.LongTensor(banned_mask_list)
-        print("banned_mask shape before: {}".format(banned_mask.shape))
+        print("banned_mask shape before tiling: {}, {}".format(banned_mask.shape, banned_mask))
+        banned_mask = tf.tile(banned_mask, [scores.shape[0], 1])
+        print("banned_mask shape after tiling: {}, {}".format(banned_mask.shape, banned_mask))
         indices = torch.ones(len(banned_mask))
 
         banned_mask = (
