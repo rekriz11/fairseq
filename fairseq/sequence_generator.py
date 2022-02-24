@@ -420,6 +420,9 @@ class SequenceGenerator(nn.Module):
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
 
+            print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
+            a = bbb
+            
             # handle max length constraint
             if step >= max_len:
                 lprobs[:, : self.eos] = -math.inf
