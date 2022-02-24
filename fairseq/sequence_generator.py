@@ -368,7 +368,8 @@ class SequenceGenerator(nn.Module):
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
 
             ### TEST CODE ###
-            print("lprobs: {}".format(lprobs[:, :100]))
+            print("lprobs shape: {}".format(lprobs.shape))
+            print("lprobs: {}".format(lprobs[:, :10]))
             print("negative_constraints: {}".format(constraints['negative']))
             a = bbb
 

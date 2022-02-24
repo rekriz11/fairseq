@@ -83,6 +83,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 for constraint in constraint_list if constraint
             ]
         for i, negative_constraint_list in enumerate(batch_negative_constraints):
+            print("\nnegative_constraint_list {} before: {}".format(i, batch_negative_constraints[i]))
             batch_negative_constraints[i] = [
                 task.target_dictionary.encode_line(
                     encode_fn_target(negative_constraint),
@@ -91,6 +92,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
+            print("negative_constraint_list {} after: {}".format(i, batch_negative_constraints[i]))
+        a = bbb
 
     if cfg.generation.constraints:
         constraints_tensor = pack_constraints(batch_constraints)
