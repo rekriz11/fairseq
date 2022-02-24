@@ -342,6 +342,7 @@ class SequenceGenerator(nn.Module):
         cand_size = 2 * beam_size  # 2 x beam size in case half are EOS
 
         # Initialize constraints, when active
+        print("Constraints: {}".format(constraints))
         if constraints is not None and self.search.supports_constraints:
             assert (
                 constraints["positive"] is not None and constraints["negative"] is not None and constraints["mask"] is not None
