@@ -194,11 +194,11 @@ class SequenceGenerator(nn.Module):
         banned_mask = torch.LongTensor(banned_mask_list)
         indices = torch.ones(len(banned_mask))
 
-    banned_mask = (
-        torch.sparse.LongTensor(banned_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
-    )
-    scores = scores.masked_fill(banned_mask, -float("inf"))
-    return scores
+        banned_mask = (
+            torch.sparse.LongTensor(banned_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
+        )
+        scores = scores.masked_fill(banned_mask, -float("inf"))
+        return scores
 
     @torch.no_grad()
     def generate(
