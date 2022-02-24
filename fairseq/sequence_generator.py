@@ -460,7 +460,7 @@ class SequenceGenerator(nn.Module):
             if self.repeat_ngram_blocker is not None:
                 lprobs = self.repeat_ngram_blocker(tokens, lprobs, bsz, beam_size, step)
 
-            print("\n")
+            #print("\n")
 
             # Shape: (batch, cand_size)
             cand_scores, cand_indices, cand_beams = self.search.step(
@@ -473,8 +473,8 @@ class SequenceGenerator(nn.Module):
 
             #print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
             cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
-            print("cand_toks: {}\tcand_scores: {}".format(cand_toks, cand_scores))
-            print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
+            #print("cand_toks: {}\tcand_scores: {}".format(cand_toks, cand_scores))
+            #print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
             
             # cand_bbsz_idx contains beam indices for the top candidate
             # hypotheses, with a range of values: [0, bsz*beam_size),
@@ -581,7 +581,7 @@ class SequenceGenerator(nn.Module):
             new_cands_to_ignore, active_hypos = torch.topk(
                 active_mask, k=beam_size, dim=1, largest=False
             )
-            print("active_hypos: {}".format(active_hypos))
+            #print("active_hypos: {}".format(active_hypos))
 
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]
@@ -615,11 +615,11 @@ class SequenceGenerator(nn.Module):
             scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
                 cand_scores, dim=1, index=active_hypos
             )
-            print("Updated beam candidate: ")
+            #print("Updated beam candidate: ")
             for ind in range(1):
                 new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
-                print("{}\t{}".format(ind, target_dictionary.string(new_toks)))
+                #print("{}\t{}".format(ind, target_dictionary.string(new_toks)))
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 

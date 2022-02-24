@@ -496,8 +496,8 @@ class LexicallyConstrainedBeamSearch(Search):
             new_indices_buf[sentno] = indices
             new_beams_buf[sentno] = beams
             self.constraint_states[sentno] = new_states
-            for i, ns in enumerate(new_states):
-                print("Beam: {}, {}".format(i, ns))
+            #for i, ns in enumerate(new_states):
+            #    print("Beam: {}, {}".format(i, ns))
         # update states for next step
         self.update_negative_constraints(new_indices_buf, new_beams_buf)
         
