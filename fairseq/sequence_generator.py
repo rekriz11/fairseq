@@ -317,6 +317,7 @@ class SequenceGenerator(nn.Module):
             .fill_(self.pad)
         )  # +2 for eos and pad
         tokens[:, 0] = self.eos if bos_token is None else bos_token
+        print("\ntokens: {}".format(tokens))
         attn: Optional[Tensor] = None
 
         # A list that indicates candidates that should be ignored.
@@ -471,7 +472,6 @@ class SequenceGenerator(nn.Module):
             # hypotheses, with a range of values: [0, bsz*beam_size),
             # and dimensions: [bsz, cand_size]
             cand_bbsz_idx = cand_beams.add(bbsz_offsets)
-            print("cand_bbsz_idx: {}".format(cand_bbsz_idx))
 
             # finalize hypotheses that end in eos
             # Shape of eos_mask: (batch size, beam size)
@@ -574,7 +574,6 @@ class SequenceGenerator(nn.Module):
                 active_mask, k=beam_size, dim=1, largest=False
             )
             print("active_hypos: {}".format(active_hypos))
-            a = bbb
 
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]
@@ -608,7 +607,8 @@ class SequenceGenerator(nn.Module):
             scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
                 cand_scores, dim=1, index=active_hypos
             )
-
+            print("tokens updated: {}".format(tokens))
+            a = bbb
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 
