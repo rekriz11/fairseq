@@ -460,6 +460,8 @@ class SequenceGenerator(nn.Module):
             if self.repeat_ngram_blocker is not None:
                 lprobs = self.repeat_ngram_blocker(tokens, lprobs, bsz, beam_size, step)
 
+            print("\n")
+
             # Shape: (batch, cand_size)
             cand_scores, cand_indices, cand_beams = self.search.step(
                 step,
@@ -471,7 +473,7 @@ class SequenceGenerator(nn.Module):
 
             #print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
             cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
-            print("\n\ncand_toks: {}\tcand_scores: {}".format(cand_toks, cand_scores))
+            print("cand_toks: {}\tcand_scores: {}".format(cand_toks, cand_scores))
             print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
             
             # cand_bbsz_idx contains beam indices for the top candidate
@@ -613,11 +615,11 @@ class SequenceGenerator(nn.Module):
             scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
                 cand_scores, dim=1, index=active_hypos
             )
-            print("Updated beam candidates: ")
+            print("Updated beam candidate: ")
             for ind in range(1):
                 new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
-                print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
+                print("{}\t{}".format(ind, target_dictionary.string(new_toks)))
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 
