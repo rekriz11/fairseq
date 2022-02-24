@@ -35,7 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger("fairseq_cli.interactive")
 
 
-Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints negative_constraints")
+Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints negative_constraints mask_constraints")
 Translation = namedtuple("Translation", "src_str hypos pos_scores alignments")
 
 
