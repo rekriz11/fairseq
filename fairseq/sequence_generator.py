@@ -37,6 +37,7 @@ class SequenceGenerator(nn.Module):
         symbols_to_strip_from_output=None,
         lm_model=None,
         lm_weight=1.0,
+        negative_constraints=None
     ):
         """Generates translations of a given source sentence.
 
@@ -114,6 +115,7 @@ class SequenceGenerator(nn.Module):
         self.lm_weight = lm_weight
         if self.lm_model is not None:
             self.lm_model.eval()
+        self.negative_constraints = negative_constraints
 
     def cuda(self):
         self.model.cuda()
@@ -364,6 +366,11 @@ class SequenceGenerator(nn.Module):
 
             lprobs[:, self.pad] = -math.inf  # never select pad
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
+
+            ### TEST CODE ###
+            print("lprobs: {}".format(lprobs[:, :100]))
+            print("negative_constraints: {}".format(constraints['negative']))
+            a = bbb
 
             # handle max length constraint
             if step >= max_len:
