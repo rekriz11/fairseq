@@ -96,7 +96,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
 
     if cfg.generation.constraints:
         constraints_tensor = pack_constraints(batch_constraints)
-        negative_constraints_tensor = pack_constraints(batch_negative_constraints)
+        negative_constraints_tensor = pack_constraints(batch_negative_constraints, cfg.generation.constraints)
         constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor}
         print("negative_constraints_tensor after packing: {}".format(negative_constraints_tensor))
     else:
@@ -265,7 +265,7 @@ def main(cfg: FairseqConfig):
             list_negative_constraints = [[] for _ in range(bsz)]
             if cfg.generation.constraints:
                 list_constraints = [unpack_constraints(c) for c in constraints]
-                list_negative_constraints = [unpack_constraints(c) for c in negative_constraints]
+                list_negative_constraints = [unpack_constraints(c, cfg.generation.constraints) for c in negative_constraints]
                 print("unpacked negative constraints: {}".format(list_negative_constraints))
                 a = bbb
             for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):

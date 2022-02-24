@@ -37,8 +37,7 @@ class ConstraintState:
     def __init__(self):
         pass
 
-
-def pack_constraints(batch_constraints: List[List[torch.Tensor]]) -> torch.Tensor:
+def pack_constraints(batch_constraints: List[List[torch.Tensor]], constraint_type='ordered') -> torch.Tensor:
     """Takes a list of list of constraints in tensor form (a list of
     tensor constraints for each sentence) and transforms it into a
     packed Tensor. For example, here is a batch of size 3 with 3, 0,
@@ -66,45 +65,52 @@ def pack_constraints(batch_constraints: List[List[torch.Tensor]]) -> torch.Tenso
 
     across all sentences in the batch.
     """
-    # The maximum word length of concatenated constraints for any sentence
-    max_constraints_len = 1
-    for sentence_constraints in batch_constraints:
-        if len(sentence_constraints):
-            # number of constraints, plus sum of constrain lens, plus a zero after each
-            constraints_len = (
-                1
-                + sum([c.size(0) for c in sentence_constraints])
-                + len(sentence_constraints)
-            )
-            max_constraints_len = max(max_constraints_len, constraints_len)
+    if constraint_type in ['ordered', 'unordered']:
+        # The maximum word length of concatenated constraints for any sentence
+        max_constraints_len = 1
+        for sentence_constraints in batch_constraints:
+            if len(sentence_constraints):
+                # number of constraints, plus sum of constrain lens, plus a zero after each
+                constraints_len = (
+                    1
+                    + sum([c.size(0) for c in sentence_constraints])
+                    + len(sentence_constraints)
+                )
+                max_constraints_len = max(max_constraints_len, constraints_len)
 
-    batch_size = len(batch_constraints)
-    constraints_tensor = torch.zeros((batch_size, max_constraints_len)).long()
-    for i, sentence_constraints in enumerate(batch_constraints):
-        constraints_tensor[i, 0] = len(sentence_constraints)
-        offset = 1
-        for j, constraint in enumerate(sentence_constraints):
-            this_len = constraint.size(0)
-            constraints_tensor[i, offset : offset + this_len] = constraint
-            offset += this_len + 1
+        batch_size = len(batch_constraints)
+        constraints_tensor = torch.zeros((batch_size, max_constraints_len)).long()
+        for i, sentence_constraints in enumerate(batch_constraints):
+            constraints_tensor[i, 0] = len(sentence_constraints)
+            offset = 1
+            for j, constraint in enumerate(sentence_constraints):
+                this_len = constraint.size(0)
+                constraints_tensor[i, offset : offset + this_len] = constraint
+                offset += this_len + 1
+    else:
+        ## If we know all constraints are a single subword, trivially convert list to tensor
+        constraints_tensor = torch.Tensor(batch_constraints)
 
     return constraints_tensor.long()
 
 
-def unpack_constraints(constraint_tensor: torch.Tensor) -> List[torch.Tensor]:
+def unpack_constraints(constraint_tensor: torch.Tensor, constraint_type='ordered') -> List[torch.Tensor]:
     """
     Transforms *one row* of a packed constraint tensor (e.g., for one
     sentence in the batch) into a list of constraint tensors.
     """
-    constraint_list = []
-    num_constraints = constraint_tensor[0]
-    constraints = constraint_tensor.tolist()
-    offset = 1
-    for i in range(num_constraints):
-        where = constraints.index(0, offset)
-        constraint_list.append(constraint_tensor[offset:where])
-        offset = where + 1
-
+    if constraint_type in ['ordered', 'unordered']:
+        constraint_list = []
+        num_constraints = constraint_tensor[0]
+        constraints = constraint_tensor.tolist()
+        offset = 1
+        for i in range(num_constraints):
+            where = constraints.index(0, offset)
+            constraint_list.append(constraint_tensor[offset:where])
+            offset = where + 1
+    else:
+        ## If we know all constraints are a single subword, trivially convert to list
+        constraint_list = constraint_tensor.tolist()
     return constraint_list
 
 
