@@ -118,8 +118,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
 
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
-        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": mask_constraints}
-        print("mask_constraints_tensor after packing: {}".format(mask_constraints))
+        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": batch_mask_constraints}
+        print("mask_constraints_tensor: {}".format(batch_mask_constraints))
     else:
         constraints = None
 
@@ -141,6 +141,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         constraints = batch.get("constraints", None)
         negative_constraints = batch.get("negative_constraints", None)
         mask_constraints = batch.get("mask_constraints", None)
+        print("mask_constraints_tensor in batch: {}".format(mask_constraints))
 
         yield Batch(
             ids=ids,
