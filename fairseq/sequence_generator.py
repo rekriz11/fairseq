@@ -398,9 +398,9 @@ class SequenceGenerator(nn.Module):
             ### TEST CODE ###
             print("lprobs shape: {}".format(lprobs.shape))
             print("negative_constraints: {}".format(constraints['negative']))
-            print("lprobs before masking: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-            lprobs = set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative'])
-            print("lprobs after masking: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+            print("lprobs before masking: {}\n{}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+            lprobs = self.set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative'])
+            print("lprobs after masking: {}\n{}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             a = bbb
 
             # handle max length constraint
