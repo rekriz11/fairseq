@@ -148,7 +148,7 @@ def main(cfg: FairseqConfig):
         or cfg.dataset.batch_size <= cfg.interactive.buffer_size
     ), "--batch-size cannot be larger than --buffer-size"
 
-    logger.info(cfg)
+    #logger.info(cfg)
 
     # Fix seed for stochastic decoding
     if cfg.common.seed is not None and not cfg.generation.no_seed_provided:
@@ -162,7 +162,7 @@ def main(cfg: FairseqConfig):
 
     # Load ensemble
     overrides = ast.literal_eval(cfg.common_eval.model_overrides)
-    logger.info("loading model(s) from {}".format(cfg.common_eval.path))
+    #logger.info("loading model(s) from {}".format(cfg.common_eval.path))
     models, _model_args = checkpoint_utils.load_model_ensemble(
         utils.split_paths(cfg.common_eval.path),
         arg_overrides=overrides,
@@ -215,15 +215,15 @@ def main(cfg: FairseqConfig):
         task.max_positions(), *[model.max_positions() for model in models]
     )
 
-    if cfg.generation.constraints:
-        logger.warning(
-            "NOTE: Constrained decoding currently assumes a shared subword vocabulary."
-        )
+    #if cfg.generation.constraints:
+    #    logger.warning(
+    #        "NOTE: Constrained decoding currently assumes a shared subword vocabulary."
+    #    )
 
-    if cfg.interactive.buffer_size > 1:
-        logger.info("Sentence buffer size: %s", cfg.interactive.buffer_size)
-    logger.info("NOTE: hypothesis and token scores are output in base 2")
-    logger.info("Type the input sentence and press return:")
+    #if cfg.interactive.buffer_size > 1:
+    #    logger.info("Sentence buffer size: %s", cfg.interactive.buffer_size)
+    #logger.info("NOTE: hypothesis and token scores are output in base 2")
+    #logger.info("Type the input sentence and press return:")
     start_id = 0
     for inputs in buffered_read(cfg.interactive.input, cfg.interactive.buffer_size):
         results = []
