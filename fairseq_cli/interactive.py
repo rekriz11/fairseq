@@ -83,6 +83,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for constraint in constraint_list if constraint
             ]
+        print("batch_constraints: ".format(batch_constraints))
         for i, negative_constraint_list in enumerate(batch_negative_constraints):
             batch_negative_constraints[i] = [
                 task.target_dictionary.encode_line(
@@ -92,7 +93,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
-
+        print("batch_negative_constraints: ".format(batch_negative_constraints))
         ## Option to mask invalid subwords
         if cfg.generation.constraints in ['ordered_mask', 'unordered_mask', 'mask']:
             null_encoded = task.target_dictionary.encode_line(
@@ -100,19 +101,21 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 append_eos=False,
                 add_if_not_exist=False,
             )
+            print("null_encoded: {}".format(null_encoded))
             for i, constraint_list in enumerate(batch_mask_constraints):
-                src_encoded = task.target_dictionary.encode_line(
+                line_encoded = task.target_dictionary.encode_line(
                     encode_fn_target(lines[i]),
                     append_eos=False,
                     add_if_not_exist=False,
                 )
-                batch_mask_constraints[i] = src_encoded + batch_constraints[i] + null_encoded
-                print("batch_mask_constraints {}: {}".format(i, batch_mask_constraints[i]))
+                print("line: {}\nencoded: {}\n".format(lines[i], line_encoded))
+                batch_mask_constraints[i] = line_encoded + batch_constraints[i] + null_encoded
+            print("batch_mask_constraints: ".format(batch_mask_constraints))
 
     if cfg.generation.constraints:
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
-        mask_constraints_tensor = pack_constraints(batch_negative_mask_constraints, cfg.generation.constraints)
+        mask_constraints_tensor = pack_constraints(batch_mask_constraints, cfg.generation.constraints)
         constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": mask_constraints_tensor}
         print("mask_constraints_tensor after packing: {}".format(mask_constraints_tensor))
     else:
