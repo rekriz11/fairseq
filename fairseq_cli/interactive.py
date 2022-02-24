@@ -103,14 +103,14 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 append_eos=False,
                 add_if_not_exist=False,
             )
-            print("null_encoded: {}".format(null_encoded[0].shape))
+            print("null_encoded: {}".format(null_encoded.shape))
             for i, constraint_list in enumerate(batch_mask_constraints):
                 line_encoded = task.target_dictionary.encode_line(
                     encode_fn_target(lines[i]),
                     append_eos=False,
                     add_if_not_exist=False,
                 )
-                print("line_encoded: {}\n".format(lines[i], line_encoded[0].shape))
+                print("line_encoded: {}, {}".format(line_encoded.shape, lines[i]))
                 batch_mask_constraints[i] = torch.cat([line_encoded, null_encoded], dim=0)
                 for constraint in batch_constraints[i]:
                     batch_mask_constraints[i] = torch.cat([batch_mask_constraints[i], constraint], dim=0)
