@@ -233,6 +233,7 @@ class SequenceGenerator(nn.Module):
         prefix_tokens: Optional[Tensor] = None,
         constraints: Optional[Dict[str, Tensor]] = None,
         bos_token: Optional[int] = None,
+        target_dictionary = None
     ):
         incremental_states = torch.jit.annotate(
             List[Dict[str, Dict[str, Optional[Tensor]]]],
@@ -462,6 +463,8 @@ class SequenceGenerator(nn.Module):
             )
 
             print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
+            cand_toks = [target_dictionary.string(ind) for ind in cand_indices[0]]
+            print("cand_toks: {}".format(cand_toks))
             a = bbb
 
             # cand_bbsz_idx contains beam indices for the top candidate
