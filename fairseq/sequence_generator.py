@@ -402,7 +402,7 @@ class SequenceGenerator(nn.Module):
             #print("lprobs shape: {}".format(lprobs.shape))
             #print("negative_constraints: {}".format(constraints['negative']))
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-            lprobs = self.set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative_masked'])
+            lprobs = self.set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative_mask'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             #a = bbb
 

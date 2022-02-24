@@ -246,7 +246,7 @@ def main(cfg: FairseqConfig):
             if constraints is not None and negative_constraints is not None:
                 constraints_dict = dict()
                 constraints_dict["positive"] = constraints
-                if constraints in ['ordered_mask', 'unordered_mask']:
+                if cfg.generation.constraints in ['ordered_mask', 'unordered_mask']:
                     constraints_dict['negative_mask'] = negative_constraints
                     constraints_dict["negative"] = torch.Tensor([])
                 else:
