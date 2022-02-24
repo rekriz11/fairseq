@@ -411,7 +411,6 @@ class SequenceGenerator(nn.Module):
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
             print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-            a = bbb
 
             # handle max length constraint
             if step >= max_len:
@@ -461,6 +460,9 @@ class SequenceGenerator(nn.Module):
                 tokens[:, : step + 1],
                 original_batch_idxs,
             )
+
+            print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
+            a = bbb
 
             # cand_bbsz_idx contains beam indices for the top candidate
             # hypotheses, with a range of values: [0, bsz*beam_size),
