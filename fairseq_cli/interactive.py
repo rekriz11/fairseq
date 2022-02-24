@@ -55,8 +55,7 @@ def buffered_read(input, buffer_size):
 def make_batches(lines, cfg, task, max_positions, encode_fn):
     def encode_fn_target(x):
         return encode_fn(x)
-
-    print("cfg.generation.constraints: {}".format(cfg.generation.constraints))
+    #print("cfg.generation.constraints: {}".format(cfg.generation.constraints))
 
     if cfg.generation.constraints:
         # Strip (tab-delimited) contraints and negative constraints, if present, from input lines,
