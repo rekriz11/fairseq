@@ -464,7 +464,7 @@ class SequenceGenerator(nn.Module):
 
             print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
             print("Index example: {}\t{}".format(cand_indices[0][0], torch.tensor([cand_indices[0][0]])))
-            cand_toks = [target_dictionary.string(torch.tensor([ind]) for ind in cand_indices[0]]
+            cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
             print("cand_toks: {}".format(cand_toks))
             a = bbb
 
