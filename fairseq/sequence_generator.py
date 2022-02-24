@@ -183,7 +183,7 @@ class SequenceGenerator(nn.Module):
             scores: logits distribution of shape (batch size, vocabulary size)
             banned_tokens: list of list of tokens to ban of length (batch_size)
         """
-        print("scores shape: {}, banned_tokens shape: {}".format(scores, banned_tokens))
+        print("scores shape: {}, banned_tokens shape: {}".format(scores.shape, banned_tokens.shape))
         banned_mask_list = []
         for idx, batch_banned_tokens in enumerate(banned_tokens):
             for token in batch_banned_tokens:
@@ -197,6 +197,7 @@ class SequenceGenerator(nn.Module):
         banned_mask = (
             torch.sparse.LongTensor(banned_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
         )
+        print("banned_mask shape: {}".format(banned_mask.shape))
         scores = scores.masked_fill(banned_mask, -float("inf"))
         return scores
 
