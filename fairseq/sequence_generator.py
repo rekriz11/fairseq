@@ -317,11 +317,11 @@ class SequenceGenerator(nn.Module):
             .fill_(self.pad)
         )  # +2 for eos and pad
         tokens[:, 0] = self.eos if bos_token is None else bos_token
-        print("\n\nPrevious beam candidates")
-        for ind, toks in enumerate(tokens):
-            new_toks = utils.strip_pad(toks, target_dictionary.pad())
-            new_scores = scores[ind][scores[ind].ne(0.0)]
-            print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
+        #print("\n\nPrevious beam candidates")
+        #for ind, toks in enumerate(tokens):
+        #    new_toks = utils.strip_pad(toks, target_dictionary.pad())
+        #    new_scores = scores[ind][scores[ind].ne(0.0)]
+        #    print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
 
         target_dictionary
         attn: Optional[Tensor] = None
