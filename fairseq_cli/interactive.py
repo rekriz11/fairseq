@@ -111,16 +111,15 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                     add_if_not_exist=False,
                 )
                 print("line_encoded: {}, {}".format(line_encoded.shape, lines[i]))
-                batch_mask_constraints[i] = [e for e in null_encoded] + [e for e in line_encoded]
+                batch_mask_constraints[i] = torch.cat([line_encoded, null_encoded], dim=0)
                 for constraint in batch_constraints[i]:
-                    batch_mask_constraints[i] += [e for e in constraint]
-            print("batch_mask_constraints: {}".format(batch_mask_constraints))
+                    batch_mask_constraints[i] = torch.cat([batch_mask_constraints[i], constraint], dim=0)
+            #print("batch_mask_constraints: {}".format(batch_mask_constraints))
 
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
-        mask_constraints_tensor = pack_constraints(batch_mask_constraints, cfg.generation.constraints)
-        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": mask_constraints_tensor}
-        print("mask_constraints_tensor after packing: {}".format(mask_constraints_tensor))
+        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": mask_constraints}
+        print("mask_constraints_tensor after packing: {}".format(mask_constraints))
     else:
         constraints = None
 
