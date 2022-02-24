@@ -320,7 +320,8 @@ class SequenceGenerator(nn.Module):
         print("\n\nPrevious beam candidates")
         for ind, toks in enumerate(tokens):
             new_toks = utils.strip_pad(toks, target_dictionary.pad())
-            print("{}\t{}\t{}".format(ind, scores[ind], target_dictionary.string(new_toks)))
+            new_scores = scores[ind][tensor.ne(scores[ind])]
+            print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
 
         target_dictionary
         attn: Optional[Tensor] = None
@@ -615,7 +616,8 @@ class SequenceGenerator(nn.Module):
             print("Updated beam candidates: ")
             for ind, toks in enumerate(tokens):
                 new_toks = utils.strip_pad(toks, target_dictionary.pad())
-                print("{}\t{}\t{}".format(ind, scores[ind], target_dictionary.string(new_toks)))
+                new_scores = scores[ind][tensor.ne(scores[ind])]
+                print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 
