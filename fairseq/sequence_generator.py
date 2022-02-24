@@ -398,7 +398,7 @@ class SequenceGenerator(nn.Module):
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
 
             ### Sets scores to negative infinity for banned tokens ###
-            print("Constraints dict: {}".format(constraints))
+            #print("Constraints dict: {}".format(constraints))
             #print("lprobs shape: {}".format(lprobs.shape))
             #print("negative_constraints: {}".format(constraints['negative']))
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
