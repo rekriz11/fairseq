@@ -198,7 +198,6 @@ class SequenceGenerator(nn.Module):
 
             seen_mask = torch.LongTensor(seen_mask_list)
             print("seen_mask shape: {}".format(seen_mask.shape))
-            a = bbb
             indices = torch.ones(len(seen_mask))
 
             seen_mask = (
