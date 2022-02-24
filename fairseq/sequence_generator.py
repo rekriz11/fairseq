@@ -174,7 +174,7 @@ class SequenceGenerator(nn.Module):
 
     ## Added constrained generation helper function from Huggingface GPT-2 example
     ## https://colab.research.google.com/drive/1ezT24sogpVyr2HJLOvXHzjv61JZJ1gMT?usp=sharing#scrollTo=KwJ4OLx6CRqc
-    def set_scores_to_inf_for_banned_tokens(self, scores, banned_tokens):
+    def set_scores_to_inf_for_unseen_tokens(self, scores, seen_tokens):
         """
         Modifies the scores in place by setting the banned token positions to `-inf`. Banned token is expected to be a
         list of list of banned tokens to ban in the format [[batch index, vocabulary position],...
@@ -185,19 +185,24 @@ class SequenceGenerator(nn.Module):
         """
         try:
             #print("scores shape: {}, banned_tokens shape: {}".format(scores.shape, banned_tokens.shape))
-            banned_mask_list = []
+            seen_mask_list = []
             for beam_idx in range(scores.shape[0]):
-                for token in banned_tokens[0]:
-                    banned_mask_list.append([beam_idx, token])
-            if not banned_mask_list:
+                for token in seen_tokens[0]:
+                    seen_mask_list.append([beam_idx, token])
+            if not seen_mask_list:
                 return scores
+            ## Adds <s>, <unk>, </s>, we don't want to set these to -inf here
+            for beam_idx in range(scores.shape[0]):
+                for token in [0, 1, 2]:
+                    seen_mask_list.append([beam_idx, token])
 
-            banned_mask = torch.LongTensor(banned_mask_list)
-            #print("banned_mask shape: {}, {}".format(banned_mask.shape, banned_mask))
-            indices = torch.ones(len(banned_mask))
+            seen_mask = torch.LongTensor(seen_mask_list)
+            print("banned_mask shape: {}".format(banned_mask.shape))
+            a = bbb
+            indices = torch.ones(len(seen_mask))
 
-            banned_mask = (
-                torch.sparse.LongTensor(banned_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
+            seen_mask = (
+                torch.sparse.LongTensor(seen_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
             )
             #print("banned_mask shape after: {}".format(banned_mask.shape))
             scores = scores.masked_fill(banned_mask, -float("inf"))
@@ -218,7 +223,7 @@ class SequenceGenerator(nn.Module):
                 with these tokens
             constraints ({"positive": torch.LongTensor, "negative": torch.LongTensor}):
                 force decoder to include the list of positive constraints and exclude
-                the list of negative constraints.
+                the list of negative constraints and mask invalid subwords.
             bos_token (int, optional): beginning of sentence token
                 (default: self.eos)
         """
@@ -339,8 +344,8 @@ class SequenceGenerator(nn.Module):
         # Initialize constraints, when active
         if constraints is not None and self.search.supports_constraints:
             assert (
-                constraints["positive"] is not None and constraints["negative"] is not None
-            ), "both 'positive' and 'negative' constraints should not be None under constraint supported condition"
+                constraints["positive"] is not None and constraints["negative"] is not None and constraints["mask"] is not None
+            ), "'positive', 'negative', and 'mask' constraints should all not be None under constraint supported condition"
             self.search.init_constraints(constraints["positive"], constraints["negative"], beam_size, cand_size)
 
         # offset arrays for converting between different indexing schemes
@@ -405,7 +410,7 @@ class SequenceGenerator(nn.Module):
             #print("lprobs shape: {}".format(lprobs.shape))
             #print("negative_constraints: {}".format(constraints['negative']))
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-            lprobs = self.set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative_mask'])
+            lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             #a = bbb
 

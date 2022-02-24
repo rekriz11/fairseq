@@ -275,13 +275,10 @@ class LexicallyConstrainedBeamSearch(Search):
                 constraint_state = OrderedConstraintState.create(constraint_tensor)
             elif self.representation == ["unordered", "unordered_mask"]:
                 constraint_state = UnorderedConstraintState.create(constraint_tensor)
-
             self.constraint_states.append([constraint_state for i in range(beam_size)])
-        ## Added code: don't include any of these negative constraints if all we want to do is mask subwords
-        if self.representation not in ["ordered_mask", "unordered_mask"]:
-            for negative_constraint_tensor in batch_negative_constraints:
-                negative_constraint_state = UnorderedConstraintState.create(negative_constraint_tensor)
-                self.negative_constraint_states.append([negative_constraint_state for i in range(cand_size)])
+        for negative_constraint_tensor in batch_negative_constraints:
+            negative_constraint_state = UnorderedConstraintState.create(negative_constraint_tensor)
+            self.negative_constraint_states.append([negative_constraint_state for i in range(cand_size)])
 
     @torch.jit.export
     def prune_sentences(self, batch_idxs: Tensor):

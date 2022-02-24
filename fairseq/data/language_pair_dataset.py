@@ -345,6 +345,7 @@ class LanguagePairDataset(FairseqDataset):
         if self.constraints is not None:
             example["constraints"] = self.constraints["positive"][index]
             example["negative_constraints"] = self.constraints["negative"][index]
+            example["mask_constraints"] = self.constraints["mask"][index]
         return example
 
     def __len__(self):

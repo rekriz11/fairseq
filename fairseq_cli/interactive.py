@@ -62,6 +62,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         # store them in batch_constraints and batch_negative_constraints
         batch_constraints = [list() for _ in lines]
         batch_negative_constraints = [list() for _ in lines]
+        batch_negative_mask_constraints = [list() for _ in lines]
         for i, line in enumerate(lines):
             if "\t" in line:
                 if "&&" in line:
@@ -83,7 +84,6 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 for constraint in constraint_list if constraint
             ]
         for i, negative_constraint_list in enumerate(batch_negative_constraints):
-            print("\nnegative_constraint_list {} before: {}".format(i, batch_negative_constraints[i]))
             batch_negative_constraints[i] = [
                 task.target_dictionary.encode_line(
                     encode_fn_target(negative_constraint),
@@ -92,13 +92,29 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
-            print("negative_constraint_list {} after: {}".format(i, batch_negative_constraints[i]))
+
+        ## Option to mask invalid subwords
+        if cfg.generation.constraints in ['ordered_mask', 'unordered_mask', 'mask']:
+            null_encoded = task.target_dictionary.encode_line(
+                encode_fn_target('null'),
+                append_eos=False,
+                add_if_not_exist=False,
+            )
+            for i, constraint_list in enumerate(batch_mask_constraints):
+                src_encoded = task.target_dictionary.encode_line(
+                    encode_fn_target(lines[i]),
+                    append_eos=False,
+                    add_if_not_exist=False,
+                )
+                batch_mask_constraints[i] = src_encoded + batch_constraints[i] + null_encoded
+                print("batch_mask_constraints {}: {}".format(i, batch_mask_constraints[i]))
 
     if cfg.generation.constraints:
         constraints_tensor = pack_constraints(batch_constraints)
-        negative_constraints_tensor = pack_constraints(batch_negative_constraints, cfg.generation.constraints)
-        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor}
-        print("negative_constraints_tensor after packing: {}".format(negative_constraints_tensor))
+        negative_constraints_tensor = pack_constraints(batch_negative_constraints)
+        mask_constraints_tensor = pack_constraints(batch_negative_mask_constraints, cfg.generation.constraints)
+        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": mask_constraints_tensor}
+        print("mask_constraints_tensor after packing: {}".format(mask_constraints_tensor))
     else:
         constraints = None
 
@@ -119,6 +135,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         src_lengths = batch["net_input"]["src_lengths"]
         constraints = batch.get("constraints", None)
         negative_constraints = batch.get("negative_constraints", None)
+        mask_constraints = batch.get("mask_constraints", None)
 
         yield Batch(
             ids=ids,
@@ -126,6 +143,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
             src_lengths=src_lengths,
             constraints=constraints,
             negative_constraints=negative_constraints,
+            mask_constraints=mask_constraints,
         )
 
 
@@ -236,6 +254,7 @@ def main(cfg: FairseqConfig):
             src_lengths = batch.src_lengths
             constraints = batch.constraints
             negative_constraints = batch.negative_constraints
+            mask_constraints = batch.mask_constraints
             if use_cuda:
                 src_tokens = src_tokens.cuda()
                 src_lengths = src_lengths.cuda()
@@ -246,12 +265,8 @@ def main(cfg: FairseqConfig):
             if constraints is not None and negative_constraints is not None:
                 constraints_dict = dict()
                 constraints_dict["positive"] = constraints
-                if cfg.generation.constraints in ['ordered_mask', 'unordered_mask']:
-                    constraints_dict['negative_mask'] = negative_constraints
-                    constraints_dict["negative"] = torch.Tensor([])
-                else:
-                    constraints_dict['negative_mask'] = torch.Tensor([])
-                    constraints_dict["negative"] = negative_constraints
+                constraints_dict["negative"] = negative_constraints
+                constraints_dict['mask'] = mask_constraints      
             else:
                 constraints_dict = None
             sample = {
@@ -271,7 +286,6 @@ def main(cfg: FairseqConfig):
             if cfg.generation.constraints:
                 list_constraints = [unpack_constraints(c) for c in constraints]
                 list_negative_constraints = [unpack_constraints(c, cfg.generation.constraints) for c in negative_constraints]
-                print("unpacked negative constraints: {}".format(list_negative_constraints))
             for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):
                 src_tokens_i = utils.strip_pad(src_tokens[i], tgt_dict.pad())
                 constraints = list_constraints[i]
