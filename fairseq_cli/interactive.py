@@ -119,7 +119,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
         constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": batch_mask_constraints}
-        print("mask_constraints_tensor: {}".format(batch_mask_constraints))
+        print("mask_constraints_tensor: {}\n\n".format(batch_mask_constraints.shape))
     else:
         constraints = None
 
