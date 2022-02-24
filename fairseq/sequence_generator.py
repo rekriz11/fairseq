@@ -185,16 +185,14 @@ class SequenceGenerator(nn.Module):
         """
         print("scores shape: {}, banned_tokens shape: {}".format(scores.shape, banned_tokens.shape))
         banned_mask_list = []
-        for idx, batch_banned_tokens in enumerate(banned_tokens):
-            for token in batch_banned_tokens:
-                banned_mask_list.append([idx, token])
+        for beam_idx in range(scores.shape[0]):
+            for token in banned_tokens[0]:
+                banned_mask_list.append([beam_idx, token])
         if not banned_mask_list:
             return scores
 
         banned_mask = torch.LongTensor(banned_mask_list)
-        print("banned_mask shape before tiling: {}, {}".format(banned_mask.shape, banned_mask))
-        banned_mask = tf.tile(banned_mask, [scores.shape[0], 1])
-        print("banned_mask shape after tiling: {}, {}".format(banned_mask.shape, banned_mask))
+        print("banned_mask shape: {}, {}".format(banned_mask.shape, banned_mask))
         indices = torch.ones(len(banned_mask))
 
         banned_mask = (
