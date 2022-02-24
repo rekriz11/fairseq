@@ -317,9 +317,10 @@ class SequenceGenerator(nn.Module):
             .fill_(self.pad)
         )  # +2 for eos and pad
         tokens[:, 0] = self.eos if bos_token is None else bos_token
+        print("\n\nPrevious beam candidates")
         for ind, toks in enumerate(tokens):
             new_toks = utils.strip_pad(toks, target_dictionary.pad())
-            print("Prev beam candidate {}: {}".format(ind, target_dictionary.string(new_toks)))
+            print("{}\t{}\t{}".format(ind, scores[ind], target_dictionary.string(new_toks)))
 
         target_dictionary
         attn: Optional[Tensor] = None
@@ -611,10 +612,10 @@ class SequenceGenerator(nn.Module):
             scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
                 cand_scores, dim=1, index=active_hypos
             )
+            print("Updated beam candidates: ")
             for ind, toks in enumerate(tokens):
                 new_toks = utils.strip_pad(toks, target_dictionary.pad())
-                print("Updated beam candidate {}: {}".format(ind, target_dictionary.string(new_toks)))
-            a = bbb
+                print("{}\t{}\t{}".format(ind, scores[ind], target_dictionary.string(new_toks)))
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 
