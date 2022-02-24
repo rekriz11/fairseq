@@ -197,14 +197,12 @@ class SequenceGenerator(nn.Module):
                     seen_mask_list.append([beam_idx, token])
 
             seen_mask = torch.LongTensor(seen_mask_list)
-            print("seen_mask shape: {}".format(seen_mask.shape))
+            #print("seen_mask shape: {}".format(seen_mask.shape))
             indices = torch.ones(len(seen_mask))
-
+            ## Avoids masking all seen tokens, masks all others
             seen_mask = ~(torch.sparse.LongTensor(seen_mask.t(), \
-                indices, scores.size()).to(scores.device).to_dense().bool())
-            
-            print("seen_mask shape: {}\nseen_mask{}".format(seen_mask.shape, seen_mask))
-            a = bbb
+                indices, scores.size()).to(scores.device).to_dense().bool())   
+            #print("seen_mask shape: {}\nseen_mask{}".format(seen_mask.shape, seen_mask))
             scores = scores.masked_fill(seen_mask, -float("inf"))
             return scores
         except IndexError:
@@ -342,7 +340,7 @@ class SequenceGenerator(nn.Module):
         cand_size = 2 * beam_size  # 2 x beam size in case half are EOS
 
         # Initialize constraints, when active
-        print("Constraints: {}".format(constraints))
+        #print("Constraints: {}".format(constraints))
         if constraints is not None and self.search.supports_constraints:
             assert (
                 constraints["positive"] is not None and constraints["negative"] is not None and constraints["mask"] is not None
@@ -413,7 +411,6 @@ class SequenceGenerator(nn.Module):
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-            #a = bbb
 
             # handle max length constraint
             if step >= max_len:
