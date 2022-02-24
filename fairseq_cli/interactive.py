@@ -294,11 +294,11 @@ def main(cfg: FairseqConfig):
                             tgt_dict.string(constraint, cfg.common_eval.post_process),
                         )
                     )
-                for negative_constraint in info["negative_constraints"]:
-                    print("N-{}\t{}".format(
-                            id_, tgt_dict.string(negative_constraint, cfg.common_eval.post_process)
-                        )
-                    )
+                #for negative_constraint in info["negative_constraints"]:
+                #    print("N-{}\t{}".format(
+                #            id_, tgt_dict.string(negative_constraint, cfg.common_eval.post_process)
+                #        )
+                #    )
 
             # Process top predictions
             for hypo in hypos[: min(len(hypos), cfg.generation.nbest)]:
