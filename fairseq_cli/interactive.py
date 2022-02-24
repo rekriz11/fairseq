@@ -64,7 +64,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         # store them in batch_constraints and batch_negative_constraints
         batch_constraints = [list() for _ in lines]
         batch_negative_constraints = [list() for _ in lines]
-        batch_negative_mask_constraints = [list() for _ in lines]
+        batch_mask_constraints = [list() for _ in lines]
         for i, line in enumerate(lines):
             if "\t" in line:
                 if "&&" in line:
@@ -85,7 +85,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for constraint in constraint_list if constraint
             ]
-        print("batch_constraints: ".format(batch_constraints))
+        print("batch_constraints: {}".format(batch_constraints))
         for i, negative_constraint_list in enumerate(batch_negative_constraints):
             batch_negative_constraints[i] = [
                 task.target_dictionary.encode_line(
@@ -95,7 +95,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
-        print("batch_negative_constraints: ".format(batch_negative_constraints))
+        print("batch_negative_constraints: {}".format(batch_negative_constraints))
         ## Option to mask invalid subwords
         if cfg.generation.constraints in ['ordered_mask', 'unordered_mask', 'mask']:
             null_encoded = task.target_dictionary.encode_line(
@@ -112,7 +112,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 print("line: {}\nencoded: {}\n".format(lines[i], line_encoded))
                 batch_mask_constraints[i] = line_encoded + batch_constraints[i] + null_encoded
-            print("batch_mask_constraints: ".format(batch_mask_constraints))
+            print("batch_mask_constraints: {}".format(batch_mask_constraints))
 
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
