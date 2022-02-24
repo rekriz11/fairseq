@@ -56,6 +56,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
     def encode_fn_target(x):
         return encode_fn(x)
 
+    print("cfg.generation.constraints: {}".format(cfg.generation.constraints))
+
     if cfg.generation.constraints:
         # Strip (tab-delimited) contraints and negative constraints, if present, from input lines,
         # "&&"-delimited two types of constraint,
@@ -112,7 +114,6 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 batch_mask_constraints[i] = line_encoded + batch_constraints[i] + null_encoded
             print("batch_mask_constraints: ".format(batch_mask_constraints))
 
-    if cfg.generation.constraints:
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
         mask_constraints_tensor = pack_constraints(batch_mask_constraints, cfg.generation.constraints)
