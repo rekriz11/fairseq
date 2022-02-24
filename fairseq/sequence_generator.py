@@ -172,6 +172,34 @@ class SequenceGenerator(nn.Module):
                 )
                 yield id, src, ref, hypos[i]
 
+    ## Added constrained generation helper function from Huggingface GPT-2 example
+    ## https://colab.research.google.com/drive/1ezT24sogpVyr2HJLOvXHzjv61JZJ1gMT?usp=sharing#scrollTo=KwJ4OLx6CRqc
+    def set_scores_to_inf_for_banned_tokens(scores, banned_tokens):
+        """
+        Modifies the scores in place by setting the banned token positions to `-inf`. Banned token is expected to be a
+        list of list of banned tokens to ban in the format [[batch index, vocabulary position],...
+
+        Args:
+            scores: logits distribution of shape (batch size, vocabulary size)
+            banned_tokens: list of list of tokens to ban of length (batch_size)
+        """
+        print("scores shape: {}, banned_tokens shape: {}".format(scores, banned_tokens))
+        banned_mask_list = []
+        for idx, batch_banned_tokens in enumerate(banned_tokens):
+            for token in batch_banned_tokens:
+                banned_mask_list.append([idx, token])
+        if not banned_mask_list:
+            return scores
+
+        banned_mask = torch.LongTensor(banned_mask_list)
+        indices = torch.ones(len(banned_mask))
+
+    banned_mask = (
+        torch.sparse.LongTensor(banned_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
+    )
+    scores = scores.masked_fill(banned_mask, -float("inf"))
+    return scores
+
     @torch.no_grad()
     def generate(
         self, models, sample: Dict[str, Dict[str, Tensor]], **kwargs
@@ -369,8 +397,10 @@ class SequenceGenerator(nn.Module):
 
             ### TEST CODE ###
             print("lprobs shape: {}".format(lprobs.shape))
-            print("lprobs: {}".format(lprobs[:, :10]))
             print("negative_constraints: {}".format(constraints['negative']))
+            print("lprobs before masking: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+            lprobs = set_scores_to_inf_for_banned_tokens(lprobs, constraints['negative'])
+            print("lprobs after masking: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             a = bbb
 
             # handle max length constraint
