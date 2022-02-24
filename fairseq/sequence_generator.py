@@ -412,6 +412,9 @@ class SequenceGenerator(nn.Module):
             lprobs[:, self.pad] = -math.inf  # never select pad
             lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
 
+            special_tokens = target_dictionary.string(torch.tensor([i for i in range(10)]))
+            print("Special tokens: {}".format(special_tokens))
+
             ### Sets scores to negative infinity for banned tokens ###
             #print("Constraints dict: {}".format(constraints))
             #print("lprobs shape: {}".format(lprobs.shape))
@@ -473,7 +476,7 @@ class SequenceGenerator(nn.Module):
             )
 
             #print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
-            cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
+            #cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
             #print("cand_toks: {}".format(cand_toks))
             
 
