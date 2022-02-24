@@ -615,7 +615,7 @@ class SequenceGenerator(nn.Module):
             )
             print("Updated beam candidates: ")
             for ind in range(1):
-                new_toks = utils.strip_pad(tokens[i], target_dictionary.pad())
+                new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
                 print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
             # Update constraints based on which candidates were selected for the next beam
