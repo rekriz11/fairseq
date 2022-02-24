@@ -472,7 +472,6 @@ class SequenceGenerator(nn.Module):
             # and dimensions: [bsz, cand_size]
             cand_bbsz_idx = cand_beams.add(bbsz_offsets)
             print("cand_bbsz_idx: {}".format(cand_bbsz_idx))
-            a = bbb
 
             # finalize hypotheses that end in eos
             # Shape of eos_mask: (batch size, beam size)
@@ -575,6 +574,7 @@ class SequenceGenerator(nn.Module):
                 active_mask, k=beam_size, dim=1, largest=False
             )
             print("active_hypos: {}".format(active_hypos))
+            a = bbb
 
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]
