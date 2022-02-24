@@ -473,7 +473,6 @@ class SequenceGenerator(nn.Module):
             print("\n\ncand_toks: {}\tcand_scores: {}".format(cand_toks, cand_scores))
             print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
             
-
             # cand_bbsz_idx contains beam indices for the top candidate
             # hypotheses, with a range of values: [0, bsz*beam_size),
             # and dimensions: [bsz, cand_size]
