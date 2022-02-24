@@ -317,7 +317,11 @@ class SequenceGenerator(nn.Module):
             .fill_(self.pad)
         )  # +2 for eos and pad
         tokens[:, 0] = self.eos if bos_token is None else bos_token
-        print("\ntokens: {}".format(tokens))
+        for ind, toks in enumerate(tokens):
+            new_toks = utils.strip_pad(toks, target_dictionary.pad())
+            print("Prev beam candidate {}: {}".format(ind, target_dictionary.string(new_toks)))
+
+        target_dictionary
         attn: Optional[Tensor] = None
 
         # A list that indicates candidates that should be ignored.
@@ -412,7 +416,7 @@ class SequenceGenerator(nn.Module):
             #print("negative_constraints: {}".format(constraints['negative']))
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
-            print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
+            #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
 
             # handle max length constraint
             if step >= max_len:
@@ -607,7 +611,9 @@ class SequenceGenerator(nn.Module):
             scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
                 cand_scores, dim=1, index=active_hypos
             )
-            print("tokens updated: {}".format(tokens))
+            for ind, toks in enumerate(tokens):
+                new_toks = utils.strip_pad(toks, target_dictionary.pad())
+                print("Updated beam candidate {}: {}".format(ind, target_dictionary.string(new_toks))
             a = bbb
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
