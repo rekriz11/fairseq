@@ -183,24 +183,27 @@ class SequenceGenerator(nn.Module):
             scores: logits distribution of shape (batch size, vocabulary size)
             banned_tokens: list of list of tokens to ban of length (batch_size)
         """
-        #print("scores shape: {}, banned_tokens shape: {}".format(scores.shape, banned_tokens.shape))
-        banned_mask_list = []
-        for beam_idx in range(scores.shape[0]):
-            for token in banned_tokens[0]:
-                banned_mask_list.append([beam_idx, token])
-        if not banned_mask_list:
+        try:
+            #print("scores shape: {}, banned_tokens shape: {}".format(scores.shape, banned_tokens.shape))
+            banned_mask_list = []
+            for beam_idx in range(scores.shape[0]):
+                for token in banned_tokens[0]:
+                    banned_mask_list.append([beam_idx, token])
+            if not banned_mask_list:
+                return scores
+
+            banned_mask = torch.LongTensor(banned_mask_list)
+            #print("banned_mask shape: {}, {}".format(banned_mask.shape, banned_mask))
+            indices = torch.ones(len(banned_mask))
+
+            banned_mask = (
+                torch.sparse.LongTensor(banned_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
+            )
+            #print("banned_mask shape after: {}".format(banned_mask.shape))
+            scores = scores.masked_fill(banned_mask, -float("inf"))
             return scores
-
-        banned_mask = torch.LongTensor(banned_mask_list)
-        #print("banned_mask shape: {}, {}".format(banned_mask.shape, banned_mask))
-        indices = torch.ones(len(banned_mask))
-
-        banned_mask = (
-            torch.sparse.LongTensor(banned_mask.t(), indices, scores.size()).to(scores.device).to_dense().bool()
-        )
-        #print("banned_mask shape after: {}".format(banned_mask.shape))
-        scores = scores.masked_fill(banned_mask, -float("inf"))
-        return scores
+        except IndexError:
+            return scores
 
     @torch.no_grad()
     def generate(
