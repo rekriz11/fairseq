@@ -613,7 +613,7 @@ class SequenceGenerator(nn.Module):
             )
             for ind, toks in enumerate(tokens):
                 new_toks = utils.strip_pad(toks, target_dictionary.pad())
-                print("Updated beam candidate {}: {}".format(ind, target_dictionary.string(new_toks))
+                print("Updated beam candidate {}: {}".format(ind, target_dictionary.string(new_toks)))
             a = bbb
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
