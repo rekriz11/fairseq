@@ -95,7 +95,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
-        print("batch_negative_constraints: {}".format(batch_negative_constraints))
+        #print("batch_negative_constraints: {}".format(batch_negative_constraints))
         ## Option to mask invalid subwords
         if cfg.generation.constraints in ['ordered_mask', 'unordered_mask', 'mask']:
             null_encoded = task.target_dictionary.encode_line(
@@ -110,8 +110,10 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                     append_eos=False,
                     add_if_not_exist=False,
                 )
-                print("line: {}\nencoded: {}\n".format(lines[i], line_encoded))
-                batch_mask_constraints[i] = line_encoded + batch_constraints[i] + null_encoded
+                print("line_encoded: {}\n".format(lines[i], line_encoded))
+                batch_mask_constraints[i] = torch.cat([line_encoded, null_encoded], dim=0)
+                for constraint in batch_constraints[i]:
+                    batch_mask_constraints[i] = torch.cat([batch_mask_constraints[i], constraint], dim=0)
             print("batch_mask_constraints: {}".format(batch_mask_constraints))
 
         constraints_tensor = pack_constraints(batch_constraints)
