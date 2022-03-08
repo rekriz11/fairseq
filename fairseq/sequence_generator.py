@@ -432,7 +432,7 @@ class SequenceGenerator(nn.Module):
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
 
-            cur_toks = [utils.strip_pad(tokens[ind], target_dictionary.pad()) for ind in beam_size]
+            cur_toks = [utils.strip_pad(tokens[ind], target_dictionary.pad()) for ind in range(beam_size)]
             lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, cur_toks, constraints['disjoint'], constraints['delimiters'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             
