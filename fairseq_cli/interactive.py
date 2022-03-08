@@ -68,7 +68,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         batch_delimiters = [list() for _ in lines]
         for i, line in enumerate(lines):
             if "\t" in line:
-                if len(line.split("&&")) == 4:
+                if "@@" in line:
                     ## Line is of the form:
                     ## <input>\t<AA>&&<BB>@@<CC>&&<DD>
                     ## AA = tab delimited positive constraints
