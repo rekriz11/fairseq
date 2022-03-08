@@ -172,9 +172,9 @@ def collate(
         batch["mask_constraints"] = collate_constraints(samples, "mask_constraints", sort_order)
     print("disjoint_slot_constraints: {}".format(samples[0]["disjoint_slot_constraints"]))
     if samples[0].get("disjoint_slot_constraints", None) is not None:
-        batch["disjoint_slot_constraints"] = collate_constraints(samples, "disjoint_slot_constraints", sort_order)
+        batch["disjoint_slot_constraints"] = samples["disjoint_slot_constraints"]
     if samples[0].get("slot_delimiters", None) is not None:
-        batch["slot_delimiters"] = collate_constraints(samples, "slot_delimiters", sort_order)
+        batch["slot_delimiters"] = samples["slot_delimiters"]
 
     return batch
 
