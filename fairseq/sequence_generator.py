@@ -209,7 +209,7 @@ class SequenceGenerator(nn.Module):
             return scores
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
-    def set_scores_to_inf_for_invalid_candidates(self, scores, valid_candidates):
+    def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates):
         return scores
 
     @torch.no_grad()
@@ -383,7 +383,6 @@ class SequenceGenerator(nn.Module):
                 new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
                 print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
-            a = bbb
             # reorder decoder internal states based on the prev choice of beams
             if reorder_state is not None:
                 if batch_idxs is not None:
