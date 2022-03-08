@@ -88,7 +88,7 @@ def pack_constraints(batch_constraints: List[List[torch.Tensor]], constraint_typ
                 constraints_tensor[i, offset : offset + this_len] = constraint
                 offset += this_len + 1
     else:
-        ## If we know all constraints are a single subword, trivially convert list to tensor
+        ## If we know constraints don't need to ba packed, trivially convert list to tensor
         constraints_tensor = torch.Tensor(batch_constraints)
 
     return constraints_tensor.long()

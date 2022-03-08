@@ -114,7 +114,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
-        print("batch_disjoint_slot_constraints: {}".format(batch_disjoint_slot_constraints))
+        #print("batch_disjoint_slot_constraints: {}".format(batch_disjoint_slot_constraints))
         for i, disjoint_constraint_list in enumerate(batch_disjoint_slot_constraints):
             batch_disjoint_slot_constraints[i] = [
                 task.target_dictionary.encode_line(
@@ -124,8 +124,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for disjoint_constraint in disjoint_constraint_list if disjoint_constraint
             ]
-        print("batch_disjoint_slot_constraints after encoding: {}".format(batch_disjoint_slot_constraints))
-        print("\nbatch_slot_delimiters: {}".format(batch_slot_delimiters))
+        #print("batch_disjoint_slot_constraints after encoding: {}".format(batch_disjoint_slot_constraints))
+        #print("\nbatch_slot_delimiters: {}".format(batch_slot_delimiters))
         for i, delimiter_list in enumerate(batch_slot_delimiters):
             batch_slot_delimiters[i] = [
                 task.target_dictionary.encode_line(
@@ -135,8 +135,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for delimiter in delimiter_list if delimiter
             ]
-        print("batch_slot_delimiters after encoding: {}".format(batch_slot_delimiters))
-        a = bbb
+        #print("batch_slot_delimiters after encoding: {}".format(batch_slot_delimiters))
         ## Option to mask invalid subwords
         if cfg.generation.constraints in ['ordered_mask', 'unordered_mask', 'mask']:
             null_encoded = task.target_dictionary.encode_line(
@@ -184,7 +183,12 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         constraints = batch.get("constraints", None)
         negative_constraints = batch.get("negative_constraints", None)
         mask_constraints = batch.get("mask_constraints", None)
-        #print("mask_constraints_tensor in batch: {}".format(mask_constraints))
+        disjoint_slot_constraints = batch.get("disjoint_slot_constraints", None)
+        slot_delimiters = batch.get("slot_delimiters", None)
+
+        print("disjoint_slot_constraints in batch: {}".format(disjoint_slot_constraints))
+        print("slot_delimiters in batch: {}".format(slot_delimiters))
+        a = bbb
 
         yield Batch(
             ids=ids,
