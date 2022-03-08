@@ -193,6 +193,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
             constraints=constraints,
             negative_constraints=negative_constraints,
             mask_constraints=mask_constraints,
+            disjoint_slot_constraints=disjoint_slot_constraints,
+            slot_delimiters=slot_delimiters
         )
 
 
