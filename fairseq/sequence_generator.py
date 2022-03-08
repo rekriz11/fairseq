@@ -378,6 +378,12 @@ class SequenceGenerator(nn.Module):
             original_batch_idxs = torch.arange(0, bsz).type_as(tokens)
 
         for step in range(max_len + 1):  # one extra step for EOS marker
+            print("Start beam candidates: ")
+            for ind in range(beam_size):
+                new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
+                new_scores = scores[ind][scores[ind].ne(0.0)]
+                print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
+            a = bbb
             # reorder decoder internal states based on the prev choice of beams
             if reorder_state is not None:
                 if batch_idxs is not None:
@@ -621,11 +627,11 @@ class SequenceGenerator(nn.Module):
             scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
                 cand_scores, dim=1, index=active_hypos
             )
-            print("Updated beam candidate: ")
+            print("\nUpdated beam candidate: ")
             for ind in range(beam_size):
                 new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
-                print("{}\t{}".format(ind, target_dictionary.string(new_toks)))
+                print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
             a = bbb
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
