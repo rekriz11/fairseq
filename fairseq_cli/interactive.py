@@ -186,10 +186,6 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         disjoint_slot_constraints = batch.get("disjoint_slot_constraints", None)
         slot_delimiters = batch.get("slot_delimiters", None)
 
-        print("disjoint_slot_constraints in batch: {}".format(disjoint_slot_constraints))
-        print("slot_delimiters in batch: {}".format(slot_delimiters))
-        a = bbb
-
         yield Batch(
             ids=ids,
             src_tokens=src_tokens,
@@ -308,6 +304,8 @@ def main(cfg: FairseqConfig):
             constraints = batch.constraints
             negative_constraints = batch.negative_constraints
             mask_constraints = batch.mask_constraints
+            disjoint_slot_constraints = batch.disjoint_slot_constraints
+            slot_delimiters = batch.slot_delimiters
             if use_cuda:
                 src_tokens = src_tokens.cuda()
                 src_lengths = src_lengths.cuda()
@@ -319,7 +317,9 @@ def main(cfg: FairseqConfig):
                 constraints_dict = dict()
                 constraints_dict["positive"] = constraints
                 constraints_dict["negative"] = negative_constraints
-                constraints_dict['mask'] = mask_constraints      
+                constraints_dict['mask'] = mask_constraints 
+                constraint_dict['disjoint'] = disjoint_slot_constraints
+                constraint_dict['delimiters'] = slot_delimiters
             else:
                 constraints_dict = None
             sample = {

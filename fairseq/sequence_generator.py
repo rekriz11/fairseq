@@ -172,7 +172,7 @@ class SequenceGenerator(nn.Module):
                 )
                 yield id, src, ref, hypos[i]
 
-    ## Added constrained generation helper function from Huggingface GPT-2 example
+    ## Added constrained generation helper function based on Huggingface GPT-2 example
     ## https://colab.research.google.com/drive/1ezT24sogpVyr2HJLOvXHzjv61JZJ1gMT?usp=sharing#scrollTo=KwJ4OLx6CRqc
     def set_scores_to_inf_for_unseen_tokens(self, scores, seen_tokens):
         """
@@ -207,6 +207,10 @@ class SequenceGenerator(nn.Module):
             return scores
         except IndexError:
             return scores
+
+    ## Added constrained generation helper to only allow generation of valid candidates after delimiter
+    def set_scores_to_inf_for_invalid_candidates(self, scores, valid_candidates):
+        return scores
 
     @torch.no_grad()
     def generate(
@@ -418,6 +422,8 @@ class SequenceGenerator(nn.Module):
             #print("negative_constraints: {}".format(constraints['negative']))
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
+
+            lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, constraints['disjoint'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             
             # handle max length constraint
@@ -615,11 +621,12 @@ class SequenceGenerator(nn.Module):
             scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
                 cand_scores, dim=1, index=active_hypos
             )
-            #print("Updated beam candidate: ")
+            print("Updated beam candidate: ")
             for ind in range(1):
                 new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
-                #print("{}\t{}".format(ind, target_dictionary.string(new_toks)))
+                print("{}\t{}".format(ind, target_dictionary.string(new_toks)))
+            a = bbb
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 
