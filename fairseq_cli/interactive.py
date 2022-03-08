@@ -320,8 +320,8 @@ def main(cfg: FairseqConfig):
                 constraints_dict["positive"] = constraints
                 constraints_dict["negative"] = negative_constraints
                 constraints_dict['mask'] = mask_constraints 
-                constraint_dict['disjoint'] = disjoint_slot_constraints
-                constraint_dict['delimiters'] = slot_delimiters
+                constraints_dict['disjoint'] = disjoint_slot_constraints
+                constraints_dict['delimiters'] = slot_delimiters
             else:
                 constraints_dict = None
             sample = {
