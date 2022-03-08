@@ -209,7 +209,11 @@ class SequenceGenerator(nn.Module):
             return scores
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
-    def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates):
+    def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, slot_delimiters):
+        for beam_idx in range(scores.shape[0]):
+            cur_tokens = tokens[beam_idx]
+            print(cur_tokens)
+            a = bbb
         return scores
 
     @torch.no_grad()
@@ -380,9 +384,9 @@ class SequenceGenerator(nn.Module):
         for step in range(max_len + 1):  # one extra step for EOS marker
             print("Start beam candidates: ")
             for ind in range(beam_size):
-                new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
-                new_scores = scores[ind][scores[ind].ne(0.0)]
-                print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
+                cur_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
+                cur_scores = scores[ind][scores[ind].ne(0.0)]
+                print("{}\t{}\t{}".format(ind, cur_scores, target_dictionary.string(cur_toks)))
             # reorder decoder internal states based on the prev choice of beams
             if reorder_state is not None:
                 if batch_idxs is not None:
@@ -428,7 +432,8 @@ class SequenceGenerator(nn.Module):
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
 
-            lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, constraints['disjoint'])
+            cur_toks = [utils.strip_pad(tokens[ind], target_dictionary.pad()) for ind in beam_size]
+            lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, cur_toks, constraints['disjoint'], constraints['delimiters'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             
             # handle max length constraint
