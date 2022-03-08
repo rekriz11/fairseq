@@ -622,7 +622,7 @@ class SequenceGenerator(nn.Module):
                 cand_scores, dim=1, index=active_hypos
             )
             print("Updated beam candidate: ")
-            for ind in range(1):
+            for ind in range(beam_size):
                 new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
                 print("{}\t{}".format(ind, target_dictionary.string(new_toks)))
