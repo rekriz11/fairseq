@@ -64,16 +64,33 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         batch_constraints = [list() for _ in lines]
         batch_negative_constraints = [list() for _ in lines]
         batch_mask_constraints = [list() for _ in lines]
+        batch_disjoint_slot_constraints = [list() for _ in lines]
+        batch_delimiters = [list() for _ in lines]
         for i, line in enumerate(lines):
             if "\t" in line:
-                if "&&" in line:
+                if len(line.split("&&")) == 4:
+                    ## Line is of the form:
+                    ## <input>\t<AA>&&<BB>@@<CC>&&<DD>
+                    ## AA = tab delimited positive constraints
+                    ## BB = tab-delimited negative constraints
+                    ## CC = tab-delimited disjoint constraints
+                    ## DD = tab-delimited delimiters used to start/reset disjoint constraints
+                    other_line_info, disjoint_constraint_info = line.split("@@")
+                    disjoint_constraint, delimiters = disjoint_constraint_info.split("&&")
+                    line_constraint, negative_constraint = other_line_info.split("&&")
+                    ## Splitting everything by tab
+                    lines[i], *batch_constraints[i] = line_constraint.split("\t")
+                    *batch_negative_constraints[i], = negative_constraint.split("\t")
+                    *batch_disjoint_slot_constraints[i], = disjoint_constraint.split("\t")
+                    *batch_delimiters[i], = delimiters.split("\t")
+                elif "&&" in line:
+                    ## Line is of the form <input>\t<AA>&&<BB>
                     line_constraint, negative_constraint = line.split("&&")
                     lines[i], *batch_constraints[i] = line_constraint.split("\t")
                     *batch_negative_constraints[i], = negative_constraint.split("\t")
                 else:
                     # By default, only use positive constraints
                     lines[i], *batch_constraints[i] = line.split("\t")
-
         # Convert each List[str] to List[Tensor]
         for i, constraint_list in enumerate(batch_constraints):
             batch_constraints[i] = [
@@ -94,7 +111,18 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
-        #print("batch_negative_constraints: {}".format(batch_negative_constraints))
+        print("batch_disjoint_slot_constraints: {}".format(batch_disjoint_slot_constraints))
+        for i, disjoint_constraint_list in enumerate(batch_disjoint_slot_constraints):
+            batch_disjoint_slot_constraints[i] = [
+                task.target_dictionary.encode_line(
+                    encode_fn_target(disjoint_constraint),
+                    append_eos=False,
+                    add_if_not_exist=False,
+                )
+                for disjoint_constraint in disjoint_constraint_list if disjoint_constraint
+            ]
+        print("batch_disjoint_slot_constraints after encoding: {}".format(batch_disjoint_slot_constraints[0]))
+        a = bbb
         ## Option to mask invalid subwords
         if cfg.generation.constraints in ['ordered_mask', 'unordered_mask', 'mask']:
             null_encoded = task.target_dictionary.encode_line(
