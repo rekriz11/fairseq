@@ -227,7 +227,9 @@ class SequenceGenerator(nn.Module):
 
     ## Splits list by a delimiter
     def split_list(self, listy, delimiter):
-        return [list(group) for k, group in groupby(listy, lambda x: x == delimiter) if not delimiter]
+        split = [list(group) for k, group in groupby(listy, lambda x: x == delimiter) if not delimiter]
+        print("listy: {}, delimiter: {}, split: {}".format(listy, delimiter, split))
+        return split
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, forced_candidates, slot_delimiters):
