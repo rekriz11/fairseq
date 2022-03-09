@@ -209,7 +209,7 @@ class SequenceGenerator(nn.Module):
             return scores
 
     ## Added constrained generation helper to mask all but a valid list of subwords
-    def mask_vocab(scores, beam_idx, valid_mask_list):
+    def mask_vocab(self, scores, beam_idx, valid_mask_list):
         ## If there are no valid candidates, throw an error
         if valid_mask_list == []:
             print("No valid candidates!")
@@ -295,7 +295,7 @@ class SequenceGenerator(nn.Module):
                     else:
                         print("ERROR, check what went wrong!!")
                         a = bbb
-                print("forced cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
+                print("FORCED, cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             elif restrict_cands[beam_idx]:
                 ## If no candidate has been generated yet, allow the first subword of all candidates
@@ -315,7 +315,7 @@ class SequenceGenerator(nn.Module):
                         valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
                         valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                         valid_mask_list.append([beam_idx, 3])
-                print("restricted cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
+                print("RESTRICTED, cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             else:
                 print("Error, there should always be exactly one or the other valid")
