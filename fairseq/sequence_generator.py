@@ -374,6 +374,8 @@ class SequenceGenerator(nn.Module):
         bos_token: Optional[int] = None,
         target_dictionary = None
     ):
+        print("Constraint_check: {}".format(constraints))
+        a = bbb
         incremental_states = torch.jit.annotate(
             List[Dict[str, Dict[str, Optional[Tensor]]]],
             [
