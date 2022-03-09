@@ -226,7 +226,7 @@ class SequenceGenerator(nn.Module):
         return scores
 
     ## Splits list by a delimiter
-    def split_list(listy, delimiter):
+    def split_list(self, listy, delimiter):
         return [list(group) for k, group in groupby(listy, lambda x: x == delimiter) if not delimiter]
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
@@ -277,7 +277,7 @@ class SequenceGenerator(nn.Module):
                 ## track previously generated candidates
                 prev_cands = cur_tokens[minor_delim_index:major_delim_index]
                 prev_cands.reverse()
-                prev_restricted_cands[beam_idx] = split_list(prev_cands, slot_delimiters[0][0].item())
+                prev_restricted_cands[beam_idx] = self.split_list(prev_cands, slot_delimiters[0][0].item())
 
         print("\n\nrestrict_cands: {}\ncur_restricted_cands: {}\nprev_restricted_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
             cur_restricted_cands, prev_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
