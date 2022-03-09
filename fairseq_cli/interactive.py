@@ -203,6 +203,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         disjoint_slot_constraints = batch.get("disjoint_slot_constraints", None)
         slot_delimiters = batch.get("slot_delimiters", None)
         constraint_type = batch.get("constraint_type", None)
+        print("constraint type check 3: {}".format(batch['constraint_type']))
 
         yield Batch(
             ids=ids,
