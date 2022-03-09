@@ -72,7 +72,6 @@ class SequenceGenerator(nn.Module):
         self.pad = tgt_dict.pad()
         self.unk = tgt_dict.unk()
         self.eos = tgt_dict.eos() if eos is None else eos
-        print("self.eos: <{}>".format(self.eos))
         self.symbols_to_strip_from_output = (
             symbols_to_strip_from_output.union({self.eos})
             if symbols_to_strip_from_output is not None
@@ -223,14 +222,10 @@ class SequenceGenerator(nn.Module):
         scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
         return scores
 
-
-
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, forced_candidates, slot_delimiters):
         if forced_candidates == [[]]:
             return scores
-        print("forced_candidates: {}".format(forced_candidates))
-        #print("\nslot_delimiters: {}".format(slot_delimiters))
         restrict_cands, generated_restricted_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         forced_cands, generated_forced_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
@@ -243,7 +238,7 @@ class SequenceGenerator(nn.Module):
                 #print("Major delimiter {} not found in candidate {}".format(slot_delimiters[0][0].item(), tokens[beam_idx]))
                 ## If major delimiter not found at all, mark this as needing to finish generating the first forced candidate
                 forced_cands[beam_idx] = 1
-                generated_forced_cands[beam_idx] = tokens[beam_idx].tolist()
+                generated_forced_cands[beam_idx] = tokens[beam_idx].tolist()[1:]
                 continue
 
             try:
