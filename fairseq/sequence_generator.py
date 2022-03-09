@@ -248,28 +248,28 @@ class SequenceGenerator(nn.Module):
                     else:
                         ## Need to find all candidates that start with what has been generated so far
                         ## and are longer than what's been generated
-                        print("\n\ncand: {}".format(cand))
-                        print("[v[:len(cand)] for v in valid_candidates[0]]: {}".format([v[:len(cand)].tolist() for v in valid_candidates[0]]))
-                        valid_cands_step = []
-                        for v in valid_candidates[0]:
-                            print("v: {}, truncated v: {}, cand: {}, match?: {}".format(v, v[:len(cand)].tolist(), cand, v[:len(cand)].tolist() == cand))
+                        #print("\n\ncand: {}".format(cand))
+                        #print("[v[:len(cand)] for v in valid_candidates[0]]: {}".format([v[:len(cand)].tolist() for v in valid_candidates[0]]))
+                        #valid_cands_step = []
+                        #for v in valid_candidates[0]:
+                        #    #print("v: {}, truncated v: {}, cand: {}, match?: {}".format(v, v[:len(cand)].tolist(), cand, v[:len(cand)].tolist() == cand))
                         valid_cands_step = [v for v in valid_candidates[0] if cand == v[:len(cand)].tolist()]
-                        print("valid_cands_step: {}".format(valid_cands_step))
+                        #print("valid_cands_step: {}".format(valid_cands_step))
                         unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
                         valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[len(cand)].item() for v in unfinished]))]
                         ## If there are finished candidates, or there are no valid candidates,
                         ## add delimiters and EOS as valid markers
                         finished = [v for v in valid_cands_step if v.size()[0] == len(cand)]
-                        if finished != [] or valid_cands_step == []:
-                            if finished != []:
-                                print("Finished candidates: {}".format(finished))
-                            if valid_cands_step == []:
-                                print("No valid candidates!")
-                            valid_mask_list.append([beam_idx, slot_delimiters[0].item()])
-                            valid_mask_list.append([beam_idx, slot_delimiters[1].item()])
+                        if finished != []:
+                            print("Finished candidates: {}".format(finished))
+                            valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
+                            valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                             valid_mask_list.append([beam_idx, 3])
+                        if valid_cands_step == []:
+                            print("No valid candidates!")
+                    print("cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
                     valid_mask = torch.LongTensor(valid_mask_list)
-                    print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
+                    #print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
                     indices = torch.ones(len(valid_mask))
                     ## Avoids masking all valid tokens, masks all others
                     valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
