@@ -210,6 +210,7 @@ class SequenceGenerator(nn.Module):
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, slot_delimiters):
+        print("slot_delimiters: {}".format(slot_delimiters)
         restrict_cands, generated_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
             cur_tokens = tokens[beam_idx].tolist()
