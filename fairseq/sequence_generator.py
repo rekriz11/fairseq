@@ -244,29 +244,29 @@ class SequenceGenerator(nn.Module):
                 if restrict_cands[beam_idx]:
                     ## If no candidate has been generated yet, allow the first subword of all candidates
                     if not cand:
-                        valid_mask_list = list(set([v[0].item() for v in valid_candidates[0]]))
+                        valid_mask_list = list(set([[beam_idx, v[0].item()] for v in valid_candidates[0]]))
                     else:
                         ## Need to find all candidates that start with what has been generated so far
                         ## and are longer than what's been generated
                         valid_cands_step = [v for v in valid_candidates if cand == v[:len(cand)]]
                         unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
-                        valid_mask_list = list(set([v[0].item() for v in unfinished]))
+                        valid_mask_list = list(set([[beam_idx, v[0].item()] for v in unfinished]))
                         ## If there are finished candidates, or there are no valid candidates,
                         ## add delimiters and EOS as valid markers
                         finished = [v for v in valid_cands_step if v.size()[0] == len(cand)]
                         if finished != [] or valid_cands_step == []:
-                            valid_mask_list.append(slot_delimiters[0].item())
-                            valid_mask_list.append(slot_delimiters[1].item())
-                            valid_mask_list.append(3)
+                            valid_mask_list.append([beam_idx, slot_delimiters[0].item()])
+                            valid_mask_list.append([beam_idx, slot_delimiters[1].item()])
+                            valid_mask_list.append([beam_idx, 3])
                     valid_mask = torch.LongTensor(valid_mask_list)
                     print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
                     indices = torch.ones(len(valid_mask))
                     print("indices shape: {}\tindices: {}".format(indices.shape, indices))
                     ## Avoids masking all valid tokens, masks all others
                     valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
-                        indices, scores[beam_idx].size()).to(scores[beam_idx].device).to_dense().bool())
+                        indices, scores.size()).to(scores.device).to_dense().bool())
                     print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
-                    scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask, -float("inf"))
+                    scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
                     a = bbb
                 else:
                     continue
