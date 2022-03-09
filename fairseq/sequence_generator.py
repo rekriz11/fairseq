@@ -208,13 +208,29 @@ class SequenceGenerator(nn.Module):
         except IndexError:
             return scores
 
+    ## Added constrained generation helper to mask all but a valid list of subwords
+    def mask_vocab(scores, beam_idx, valid_mask_list):
+        ## If there are no valid candidates, throw an error
+        if valid_mask_list == []:
+            print("No valid candidates!")
+            a = bbb
+        valid_mask = torch.LongTensor(valid_mask_list)
+        indices = torch.ones(len(valid_mask))
+        ## Avoids masking all valid tokens, masks all others
+        valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
+            indices, scores.size()).to(scores.device).to_dense().bool())
+        scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
+        return scores
+
+
+
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, forced_candidates, slot_delimiters):
         print("forced_candidates: {}".format(forced_candidates))
         a = bbb
         #print("\nslot_delimiters: {}".format(slot_delimiters))
-        restrict_cands, generated_restricted_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
-        forced_cands, generated_forced_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
+        restrict_cands, generated_restricted_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
+        forced_cands, generated_forced_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
             cur_tokens = tokens[beam_idx].tolist()
             cur_tokens.reverse()
@@ -223,38 +239,74 @@ class SequenceGenerator(nn.Module):
                 major_delim_index = cur_tokens.index(slot_delimiters[0][0])
             except ValueError:
                 #print("Major delimiter {} not found in candidate {}".format(slot_delimiters[0][0].item(), tokens[beam_idx]))
-                major_delim_index = -1
+                ## If major delimiter not found at all, mark this as needing to finish generating the first forced candidate
+                forced_cands[beam_idx] = 1
+                generated_forced_cands[beam_idx] = tokens[beam_idx].tolist()
+                continue
 
             try:
                 minor_delim_index = cur_tokens.index(slot_delimiters[0][1])
             except ValueError:
                 #print("Minor delimiter {} not found in candidate {}".format(slot_delimiters[0][1].item(), tokens[beam_idx]))
-                minor_delim_index = -1
+                ## If minor delimiter not found at all, mark this as needing to finish generating the second forced candidate
+                forced_cands[beam_idx] = 2
+                cur_cand = cur_tokens[:major_delim_index]
+                cur_cand.reverse()
+                generated_forced_cands[beam_idx] = cur_cand
+                continue
 
-            ## Restrict candidates if minor delimiter (##) is found more recently than major delimiter ($$$)
-            if major_delim_index != -1 and minor_delim_index != -1 and minor_delim_index < major_delim_index:
-                restrict_cands[beam_idx] = True
+            ## Restrict to correct forced candidate if major delimiter is found more recently than minor delimiter
+            if major_delim_index < minor_delim_index:
+                ## To find the correct forced candidate index, split current tokens by major delimiter
+                forced_cand_index = len(tokens[beam_idx].tolist().split(slot_delimiters[0][0]))
+                forced_cands[beam_idx] = forced_cand_index
+                cur_cand = cur_tokens[:major_delim_index]
+                cur_cand.reverse()
+                generated_forced_cands[beam_idx] = cur_cand
+
+            ## Restrict to valid candidates if minor delimiter (##) is found more recently than major delimiter ($$$)
+            if minor_delim_index < major_delim_index:
+                restrict_cands[beam_idx] = 1
                 cur_cand = cur_tokens[:minor_delim_index]
                 cur_cand.reverse()
                 generated_restricted_cands[beam_idx] = cur_cand
 
-        if any(restrict_cands):
-            print("\nrestrict_cands (TRUE FOUND): {}\ngenerated_cands: {}\nslot_delimiters: {}\ninitial_valid_candidates: {}".format(restrict_cands, generated_cands, slot_delimiters, valid_candidates))
-            for beam_idx, cand in enumerate(generated_cands):
+        if any(forced_cands) or any(restrict_cands):
+            print("\n\nrestrict_cands: {}\ngenerated_restrict_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}".format(restrict_cands, \
+                generated_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
+            for beam_idx, cand in enumerate(generated_forced_cands):
                 valid_mask_list = []
-                ## If we need to restrict candidates, first find which candidates are still valid
-                if restrict_cands[beam_idx]:
+                if forced_cands[beam_idx]:
+                    ## Subtract one from index to start at 0
+                    forced = forced_candidates[forced_cands[beam_idx] - 1]
+                    if not cand:
+                        valid_mask_list = [[beam_idx, forced[0].item()]]
+                    else:
+                        ## Check if forced candidate has been correctly generated so far
+                        print("Correct forced candidate: {}, generated candidate so far: {}".format(forced, cand))
+                        if forced[:len(cand)].tolist() != cand:
+                            print("Error generating forced candidate!!")
+                            a = bbb
+                        if forced.size()[0] > len(cand):
+                            ## If forced candidate is unfinished, only allow model to generate
+                            valid_mask_list = [[beam_idx, forced[len(cand)].item()]]
+                        elif forced.size()[0] == len(cand) and forced_cands[beam_idx] == 1:
+                            ## If first candidate is finished, only allow model to generate major delimiter
+                            valid_mask_list = [[beam_idx, slot_delimiters[0][0].item()]]
+                        elif forced.size()[0] == len(cand) and forced_cands[beam_idx] > 1:
+                            ## If non-first candidate is finished, only allow model to generate minor delimiter
+                            valid_mask_list = [[beam_idx, slot_delimiters[0][1].item()]]
+                        else:
+                            print("ERROR, check what went wrong!!")
+                            a = bbb
+                    print("forced cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
+                    scores = mask_vocab(scores, beam_idx, valid_mask_list)
+                elif restrict_cands[beam_idx]:
                     ## If no candidate has been generated yet, allow the first subword of all candidates
                     if not cand:
                         valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0].item() for v in valid_candidates[0]]))]
                     else:
-                        ## Need to find all candidates that start with what has been generated so far
-                        ## and are longer than what's been generated
-                        #print("\n\ncand: {}".format(cand))
-                        #print("[v[:len(cand)] for v in valid_candidates[0]]: {}".format([v[:len(cand)].tolist() for v in valid_candidates[0]]))
-                        #valid_cands_step = []
-                        #for v in valid_candidates[0]:
-                        #    #print("v: {}, truncated v: {}, cand: {}, match?: {}".format(v, v[:len(cand)].tolist(), cand, v[:len(cand)].tolist() == cand))
+                        ## Need to find all candidates that start with what has been generated so far and are longer than what's been generated
                         valid_cands_step = [v for v in valid_candidates[0] if cand == v[:len(cand)].tolist()]
                         #print("valid_cands_step: {}".format(valid_cands_step))
                         unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
@@ -267,20 +319,8 @@ class SequenceGenerator(nn.Module):
                             valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
                             valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                             valid_mask_list.append([beam_idx, 3])
-                    print("cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
-                    ## If there are no valid candidates, set everything to -inf
-                    if valid_mask_list == []:
-                        print("No valid candidates!")
-                        scores[beam_idx] = -float("inf")
-                        a = bbb
-                    else:
-                        valid_mask = torch.LongTensor(valid_mask_list)
-                        #print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
-                        indices = torch.ones(len(valid_mask))
-                        ## Avoids masking all valid tokens, masks all others
-                        valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
-                            indices, scores.size()).to(scores.device).to_dense().bool())
-                        scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
+                    print("restriced cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
+                    scores = mask_vocab(scores, beam_idx, valid_mask_list)
                 else:
                     continue
         return scores
