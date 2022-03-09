@@ -58,7 +58,6 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
     #print("cfg.generation.constraints: {}".format(cfg.generation.constraints))
 
     if cfg.generation.constraints:
-        print("Initial constraint type: {}".format(cfg.generation.constraints))
         # Strip (tab-delimited) contraints and negative constraints, if present, from input lines,
         # "&&"-delimited two types of constraint,
         # store them in batch_constraints and batch_negative_constraints
@@ -177,7 +176,6 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
         constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": batch_mask_constraints, \
         'forced': batch_forced_slot_constraints, 'disjoint': batch_disjoint_slot_constraints, 'delimiters': batch_slot_delimiters, 'constraint_type': cfg.generation.constraints}
-        print("constraint type check 2: {}".format(constraints['constraint_type']))
     else:
         constraints = None
 
@@ -347,6 +345,7 @@ def main(cfg: FairseqConfig):
                 constraints_dict['disjoint'] = disjoint_slot_constraints
                 constraints_dict['delimiters'] = slot_delimiters
                 constraints_dict['constraint_type'] = constraint_type
+                print("constraint type check 4: {}".format(constraints['constraint_type']))
 
             else:
                 constraints_dict = None

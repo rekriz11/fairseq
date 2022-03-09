@@ -359,7 +359,7 @@ class LanguagePairDataset(FairseqDataset):
             example["forced_slot_constraints"] = self.constraints["forced"][index]
             example["disjoint_slot_constraints"] = self.constraints["disjoint"][index]
             example["slot_delimiters"] = self.constraints["delimiters"][index]
-            example["constraint_type"] = self.constraints["constraint_type"]
+            example["constraint_type"] = self.constraints["constraint_type"][0]
         return example
 
     def __len__(self):
