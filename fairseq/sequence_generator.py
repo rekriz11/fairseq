@@ -225,14 +225,15 @@ class SequenceGenerator(nn.Module):
             scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
         return scores
 
-    def split_list(list, delimiter):
-        return [list(group) for k, group in groupby(a, lambda x: x == 1)]
+    ## Splits list by a delimiter
+    def split_list(listy, delimiter):
+        return [list(group) for k, group in groupby(listy, lambda x: x == delimiter) if not delimiter]
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, forced_candidates, slot_delimiters):
         if forced_candidates == [[]]:
             return scores
-        restrict_cands, generated_restricted_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
+        restrict_cands, prev_restricted_cands, cur_restricted_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         forced_cands, generated_forced_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
             cur_tokens = tokens[beam_idx].tolist()
@@ -272,11 +273,15 @@ class SequenceGenerator(nn.Module):
                 restrict_cands[beam_idx] = 1
                 cur_cand = cur_tokens[:minor_delim_index]
                 cur_cand.reverse()
-                generated_restricted_cands[beam_idx] = cur_cand
+                cur_restricted_cands[beam_idx] = cur_cand
+                ## track previously generated candidates
+                prev_cands = cur_tokens[minor_delim_index:major_delim_index]
+                prev_cands.reverse()
+                prev_restricted_cands[beam_idx] = split_list(prev_cands, slot_delimiters[0][0].item())
 
-        print("\n\nrestrict_cands: {}\ngenerated_restrict_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
-            generated_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
-        for beam_idx, (forced_cand, restricted_cand) in enumerate(zip(generated_forced_cands, generated_restricted_cands)):
+        print("\n\nrestrict_cands: {}\ncur_restricted_cands: {}\nprev_restricted_candidates: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
+            cur_restricted_cands, prev_restricted_candidates, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
+        for beam_idx, (forced_cand, restricted_cand, prev_cand) in enumerate(zip(generated_forced_cands, cur_restricted_cands, prev_restricted_cands)):
             valid_mask_list = []
             if forced_cands[beam_idx]:
                 ## Subtract one from index to start at 0
@@ -306,9 +311,13 @@ class SequenceGenerator(nn.Module):
                 print("FORCED, forced_cand: {}, valid_mask_list: {}".format(forced_cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             elif restrict_cands[beam_idx]:
+                ## Remove previously generated candidates from the list of valid candidates
+                cur_valid_candidates = [v.tolist() for v in valid_candidates[0]]
+                for cand in prev_cand:
+                    cur_valid_candidates.remove(cand)
                 ## If no candidate has been generated yet, allow the first subword of all candidates
                 if not restricted_cand:
-                    valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0].item() for v in valid_candidates[0]]))]
+                    valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0] for v in cur_valid_candidates]))]
                 else:
                     ## Need to find all candidates that start with what has been generated so far and are longer than what's been generated
                     valid_cands_step = [v for v in valid_candidates[0] if restricted_cand == v[:len(restricted_cand)].tolist()]
