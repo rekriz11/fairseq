@@ -364,6 +364,41 @@ class LexicallyConstrainedBeamSearch(Search):
                 lprobs.index_put_(tuple(negative_indices.t()), inf_value)
         return lprobs
 
+    ## Added constrained generation helper that removes all hypotheses that end with an -inf 
+    ## and replaces them with the highest ranked non-infinite hypothesis
+    '''def remove_invalid_hypos(self, step, lprobs, scores, prev_output_tokens, beam_size):
+        last_scores = 
+        """Handle prefix tokens"""
+        prefix_toks = prefix_tokens[:, step].unsqueeze(-1).repeat(1, beam_size).view(-1)
+        prefix_lprobs = lprobs.gather(-1, prefix_toks.unsqueeze(-1))
+        prefix_mask = prefix_toks.ne(self.pad)
+        lprobs[prefix_mask] = torch.tensor(-math.inf).to(lprobs)
+        lprobs[prefix_mask] = lprobs[prefix_mask].scatter(
+            -1, prefix_toks[prefix_mask].unsqueeze(-1), prefix_lprobs[prefix_mask]
+        )
+        # if prefix includes eos, then we should make sure tokens and
+        # scores are the same across all beams
+        eos_mask = prefix_toks.eq(self.eos)
+        if eos_mask.any():
+            # validate that the first beam matches the prefix
+            first_beam = tokens[eos_mask].view(-1, beam_size, tokens.size(-1))[
+                :, 0, 1 : step + 1
+            ]
+            eos_mask_batch_dim = eos_mask.view(-1, beam_size)[:, 0]
+            target_prefix = prefix_tokens[eos_mask_batch_dim][:, :step]
+            assert (first_beam == target_prefix).all()
+
+            # copy tokens, scores and lprobs from the first beam to all beams
+            tokens = self.replicate_first_beam(tokens, eos_mask_batch_dim, beam_size)
+            scores = self.replicate_first_beam(scores, eos_mask_batch_dim, beam_size)
+            lprobs = self.replicate_first_beam(lprobs, eos_mask_batch_dim, beam_size)
+        return lprobs, tokens, scores
+
+    def replicate_first_beam(self, tensor, mask, beam_size: int):
+        tensor = tensor.view(-1, beam_size, tensor.size(-1))
+        tensor[mask] = tensor[mask][:, :1, :]
+        return tensor.view(-1, tensor.size(-1))'''
+
     @torch.jit.export
     def step(
         self,
@@ -455,6 +490,7 @@ class LexicallyConstrainedBeamSearch(Search):
             lprobs.view(batch_size, -1),
             self.num_cands,
         )
+        print("top_predictions: {}".format(top_predictions))
         scores_buf, indices_buf = top_prediction
         # Project back into relative indices and beams
         beams_buf = indices_buf // vocab_size

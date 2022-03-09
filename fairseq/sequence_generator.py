@@ -658,7 +658,7 @@ class SequenceGenerator(nn.Module):
             new_cands_to_ignore, active_hypos = torch.topk(
                 active_mask, k=beam_size, dim=1, largest=False
             )
-            #print("active_hypos: {}".format(active_hypos))
+            print("active_hypos: {}\nnew_cands_to_ignore: {}".format(active_hypos, new_cands_to_ignore))
 
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]
