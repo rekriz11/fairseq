@@ -306,7 +306,7 @@ class SequenceGenerator(nn.Module):
                     if finished != []:
                         print("Finished candidates: {}, number of forced candidates".format(finished, forced_cands[beam_idx]))
                         ## If we haven't generated all forced candidates, allow the major delimiter
-                        if forced_cands[beam_idx] <= len(forced_candidates[0]):
+                        if forced_cands[beam_idx] < len(forced_candidates[0]):
                             valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
                         #valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                         valid_mask_list.append([beam_idx, 3])
