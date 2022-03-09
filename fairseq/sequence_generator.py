@@ -249,7 +249,7 @@ class SequenceGenerator(nn.Module):
                         ## Need to find all candidates that start with what has been generated so far
                         ## and are longer than what's been generated
                         print("\n\ncand: {}".format(cand))
-                        print("[v[:len(cand)] for v in valid_candidates]: {}\n\n".format([v[:len(cand)] for v in valid_candidates]))
+                        print("[v[:len(cand)] for v in valid_candidates[0]]: {}\n\n".format([v[:len(cand)] for v in valid_candidates[0]]))
                         valid_cands_step = [v for v in valid_candidates if cand == v[:len(cand)]]
                         unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
                         valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[len(cand)].item() for v in unfinished]))]
