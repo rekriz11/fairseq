@@ -234,10 +234,10 @@ class SequenceGenerator(nn.Module):
                 cur_cand = cur_tokens[:minor_delim_index]
                 cur_cand.reverse()
                 generated_cands[beam_idx] = cur_cand
-        print("restrict_cands: {}\ngenerated_cands: {}".format(restrict_cands, generated_cands))
+        print("\nrestrict_cands: {}\ngenerated_cands: {}".format(restrict_cands, generated_cands))
 
         if any(restrict_cands):
-            print("valid_candidates: {}".format(valid_candidates))
+            print("initial valid_candidates: {}".format(valid_candidates))
             for beam_idx, cand in enumerate(generated_cands):
                 valid_mask_list = []
                 ## If we need to restrict candidates, first find which candidates are still valid
@@ -250,24 +250,25 @@ class SequenceGenerator(nn.Module):
                         ## and are longer than what's been generated
                         valid_cands_step = [v for v in valid_candidates if cand == v[:len(cand)]]
                         unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
-                        valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0].item() for v in unfinished]))]
+                        valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[len(cand)].item() for v in unfinished]))]
                         ## If there are finished candidates, or there are no valid candidates,
                         ## add delimiters and EOS as valid markers
                         finished = [v for v in valid_cands_step if v.size()[0] == len(cand)]
                         if finished != [] or valid_cands_step == []:
+                            if finished != []:
+                                print("Finished candidates: {}".format(finished))
+                            if valid_cands_step == []:
+                                print("No valid candidates!")
                             valid_mask_list.append([beam_idx, slot_delimiters[0].item()])
                             valid_mask_list.append([beam_idx, slot_delimiters[1].item()])
                             valid_mask_list.append([beam_idx, 3])
                     valid_mask = torch.LongTensor(valid_mask_list)
                     print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
                     indices = torch.ones(len(valid_mask))
-                    print("indices shape: {}\tindices: {}".format(indices.shape, indices))
                     ## Avoids masking all valid tokens, masks all others
                     valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
                         indices, scores.size()).to(scores.device).to_dense().bool())
-                    print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
                     scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
-                    a = bbb
                 else:
                     continue
         return scores
@@ -438,11 +439,6 @@ class SequenceGenerator(nn.Module):
             original_batch_idxs = torch.arange(0, bsz).type_as(tokens)
 
         for step in range(max_len + 1):  # one extra step for EOS marker
-            print("Start beam candidates: ")
-            for ind in range(beam_size):
-                cur_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
-                cur_scores = scores[ind][scores[ind].ne(0.0)]
-                print("{}\t{}\t{}".format(ind, cur_scores, target_dictionary.string(cur_toks)))
             # reorder decoder internal states based on the prev choice of beams
             if reorder_state is not None:
                 if batch_idxs is not None:
