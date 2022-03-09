@@ -209,9 +209,12 @@ class SequenceGenerator(nn.Module):
             return scores
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
-    def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, slot_delimiters):
+    def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, forced_candidates, slot_delimiters):
+        print("forced_candidates: {}".format(forced_candidates))
+        a = bbb
         #print("\nslot_delimiters: {}".format(slot_delimiters))
-        restrict_cands, generated_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
+        restrict_cands, generated_restricted_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
+        forced_cands, generated_forced_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
             cur_tokens = tokens[beam_idx].tolist()
             cur_tokens.reverse()
@@ -220,20 +223,20 @@ class SequenceGenerator(nn.Module):
                 major_delim_index = cur_tokens.index(slot_delimiters[0][0])
             except ValueError:
                 #print("Major delimiter {} not found in candidate {}".format(slot_delimiters[0][0].item(), tokens[beam_idx]))
-                continue
+                major_delim_index = -1
 
             try:
                 minor_delim_index = cur_tokens.index(slot_delimiters[0][1])
             except ValueError:
                 #print("Minor delimiter {} not found in candidate {}".format(slot_delimiters[0][1].item(), tokens[beam_idx]))
-                continue
+                minor_delim_index = -1
 
             ## Restrict candidates if minor delimiter (##) is found more recently than major delimiter ($$$)
-            if minor_delim_index < major_delim_index:
+            if major_delim_index != -1 and minor_delim_index != -1 and minor_delim_index < major_delim_index:
                 restrict_cands[beam_idx] = True
                 cur_cand = cur_tokens[:minor_delim_index]
                 cur_cand.reverse()
-                generated_cands[beam_idx] = cur_cand
+                generated_restricted_cands[beam_idx] = cur_cand
 
         if any(restrict_cands):
             print("\nrestrict_cands (TRUE FOUND): {}\ngenerated_cands: {}\nslot_delimiters: {}\ninitial_valid_candidates: {}".format(restrict_cands, generated_cands, slot_delimiters, valid_candidates))
@@ -494,7 +497,7 @@ class SequenceGenerator(nn.Module):
             lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
 
             cur_toks = [utils.strip_pad(tokens[ind], target_dictionary.pad()) for ind in range(beam_size)]
-            lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, cur_toks, constraints['disjoint'], constraints['delimiters'])
+            lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, cur_toks, constraints['disjoint'], constraints['forced'], constraints['delimiters'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             
             # handle max length constraint

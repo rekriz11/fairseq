@@ -35,7 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger("fairseq_cli.interactive")
 
 
-Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints negative_constraints mask_constraints disjoint_slot_constraints slot_delimiters")
+Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints negative_constraints mask_constraints forced_slot_constraints disjoint_slot_constraints slot_delimiters")
 Translation = namedtuple("Translation", "src_str hypos pos_scores alignments")
 
 
@@ -64,19 +64,21 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         batch_constraints = [list() for _ in lines]
         batch_negative_constraints = [list() for _ in lines]
         batch_mask_constraints = [list() for _ in lines]
+        batch_forced_slot_constraints = [list() for _ in lines]
         batch_disjoint_slot_constraints = [list() for _ in lines]
         batch_slot_delimiters = [list() for _ in lines]
         for i, line in enumerate(lines):
             if "\t" in line:
                 if "@@" in line:
                     ## Line is of the form:
-                    ## <input>\t<AA>&&<BB>@@<CC>&&<DD>
+                    ## <input>\t<AA>&&<BB>@@<CC>&&<DD>&&<EE>
                     ## AA = tab delimited positive constraints
                     ## BB = tab-delimited negative constraints
-                    ## CC = tab-delimited disjoint constraints
-                    ## DD = tab-delimited delimiters used to start/reset disjoint constraints
+                    ## CC = tab-delimited forced slot constraints
+                    ## DD = tab-delimited disjoint slot constraints
+                    ## EE = tab-delimited delimiters used to start/reset disjoint constraints
                     other_line_info, disjoint_constraint_info = line.split("@@")
-                    disjoint_constraint, delimiter = disjoint_constraint_info.split("&&")
+                    forced_constraint, disjoint_constraint, delimiter = disjoint_constraint_info.split("&&")
                     ## Splitting everything by tab
                     if "&&" in other_line_info:
                         line_constraint, negative_constraint = other_line_info.split("&&")
@@ -84,6 +86,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                         *batch_negative_constraints[i], = negative_constraint.split("\t")
                     else:
                         lines[i], *batch_constraints[i] = other_line_info.split("\t")
+                    *batch_forced_slot_constraints[i], = forced_constraint.split("\t")
                     *batch_disjoint_slot_constraints[i], = disjoint_constraint.split("\t")
                     *batch_slot_delimiters[i], = delimiter.split("\t")
                 elif "&&" in line:
@@ -114,7 +117,18 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for negative_constraint in negative_constraint_list if negative_constraint
             ]
-        #print("batch_disjoint_slot_constraints: {}".format(batch_disjoint_slot_constraints))
+        print("batch_forced_slot_constraints: {}".format(batch_forced_slot_constraints))
+        for i, forced_constraint_list in enumerate(batch_forced_slot_constraints):
+            batch_forced_slot_constraints[i] = [
+                task.target_dictionary.encode_line(
+                    encode_fn_target(forced_constraint),
+                    append_eos=False,
+                    add_if_not_exist=False,
+                )
+                for forced_constraint in forced_constraint_list if forced_constraint
+            ]
+        print("batch_forced_slot_constraints after encoding: {}".format(batch_forced_slot_constraints))
+        print("batch_disjoint_slot_constraints: {}".format(batch_disjoint_slot_constraints))
         for i, disjoint_constraint_list in enumerate(batch_disjoint_slot_constraints):
             batch_disjoint_slot_constraints[i] = [
                 task.target_dictionary.encode_line(
@@ -124,8 +138,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for disjoint_constraint in disjoint_constraint_list if disjoint_constraint
             ]
-        #print("batch_disjoint_slot_constraints after encoding: {}".format(batch_disjoint_slot_constraints))
-        #print("\nbatch_slot_delimiters: {}".format(batch_slot_delimiters))
+        print("batch_disjoint_slot_constraints after encoding: {}".format(batch_disjoint_slot_constraints))
+        print("\nbatch_slot_delimiters: {}".format(batch_slot_delimiters))
         for i, delimiter_list in enumerate(batch_slot_delimiters):
             batch_slot_delimiters[i] = [
                 task.target_dictionary.encode_line(
@@ -135,7 +149,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
                 )
                 for delimiter in delimiter_list if delimiter
             ]
-        #print("batch_slot_delimiters after encoding: {}".format(batch_slot_delimiters))
+        print("batch_slot_delimiters after encoding: {}".format(batch_slot_delimiters))
         ## Option to mask invalid subwords
         if cfg.generation.constraints in ['ordered_mask', 'unordered_mask', 'mask']:
             null_encoded = task.target_dictionary.encode_line(
@@ -160,8 +174,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
 
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
-        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": batch_mask_constraints, 'disjoint': batch_disjoint_slot_constraints, 'delimiters': batch_slot_delimiters}
-        #print("mask_constraints_tensor: {}\n\n".format(batch_mask_constraints[0].shape))
+        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": batch_mask_constraints, \
+        'forced': batch_forced_slot_constraints, 'disjoint': batch_disjoint_slot_constraints, 'delimiters': batch_slot_delimiters}
     else:
         constraints = None
 
@@ -183,6 +197,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         constraints = batch.get("constraints", None)
         negative_constraints = batch.get("negative_constraints", None)
         mask_constraints = batch.get("mask_constraints", None)
+        forced_slot_constraints = batch.get("forced_slot_constraints", None)
         disjoint_slot_constraints = batch.get("disjoint_slot_constraints", None)
         slot_delimiters = batch.get("slot_delimiters", None)
 
@@ -193,6 +208,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
             constraints=constraints,
             negative_constraints=negative_constraints,
             mask_constraints=mask_constraints,
+            forced_slot_constraints=forced_slot_constraints,
             disjoint_slot_constraints=disjoint_slot_constraints,
             slot_delimiters=slot_delimiters
         )
@@ -306,6 +322,7 @@ def main(cfg: FairseqConfig):
             constraints = batch.constraints
             negative_constraints = batch.negative_constraints
             mask_constraints = batch.mask_constraints
+            forced_slot_constraints = batch.forced_slot_constraints
             disjoint_slot_constraints = batch.disjoint_slot_constraints
             slot_delimiters = batch.slot_delimiters
             if use_cuda:
@@ -319,9 +336,11 @@ def main(cfg: FairseqConfig):
                 constraints_dict = dict()
                 constraints_dict["positive"] = constraints
                 constraints_dict["negative"] = negative_constraints
-                constraints_dict['mask'] = mask_constraints 
+                constraints_dict['mask'] = mask_constraints
+                constraints_dict['forced'] = forced_slot_constraints
                 constraints_dict['disjoint'] = disjoint_slot_constraints
                 constraints_dict['delimiters'] = slot_delimiters
+
             else:
                 constraints_dict = None
             sample = {

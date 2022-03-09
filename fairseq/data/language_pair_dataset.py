@@ -169,6 +169,8 @@ def collate(
         batch["negative_constraints"] = collate_constraints(samples, "negative_constraints", sort_order)
     if samples[0].get("mask_constraints", None) is not None:
         batch["mask_constraints"] = collate_constraints(samples, "mask_constraints", sort_order)
+    if samples[0].get("forced_slot_constraints", None) is not None:
+        batch["forced_slot_constraints"] = [sample.get("forced_slot_constraints") for sample in samples]
     if samples[0].get("disjoint_slot_constraints", None) is not None:
         batch["disjoint_slot_constraints"] = [sample.get("disjoint_slot_constraints") for sample in samples]
     if samples[0].get("slot_delimiters", None) is not None:
@@ -352,6 +354,7 @@ class LanguagePairDataset(FairseqDataset):
             example["constraints"] = self.constraints["positive"][index]
             example["negative_constraints"] = self.constraints["negative"][index]
             example["mask_constraints"] = self.constraints["mask"][index]
+            example["forced_slot_constraints"] = self.constraints["forced"][index]
             example["disjoint_slot_constraints"] = self.constraints["disjoint"][index]
             example["slot_delimiters"] = self.constraints["delimiters"][index]
         return example
