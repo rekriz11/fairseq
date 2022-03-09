@@ -210,7 +210,7 @@ class SequenceGenerator(nn.Module):
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, slot_delimiters):
-        print("\nslot_delimiters: {}".format(slot_delimiters))
+        #print("\nslot_delimiters: {}".format(slot_delimiters))
         restrict_cands, generated_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
             cur_tokens = tokens[beam_idx].tolist()
@@ -219,13 +219,13 @@ class SequenceGenerator(nn.Module):
             try:
                 major_delim_index = cur_tokens.index(slot_delimiters[0][0])
             except ValueError:
-                print("Major delimiter {} not found in candidate {}".format(slot_delimiters[0][0].item(), tokens[beam_idx]))
+                #print("Major delimiter {} not found in candidate {}".format(slot_delimiters[0][0].item(), tokens[beam_idx]))
                 continue
 
             try:
                 minor_delim_index = cur_tokens.index(slot_delimiters[0][1])
             except ValueError:
-                print("Minor delimiter {} not found in candidate {}".format(slot_delimiters[0][1].item(), tokens[beam_idx]))
+                #print("Minor delimiter {} not found in candidate {}".format(slot_delimiters[0][1].item(), tokens[beam_idx]))
                 continue
 
             ## Restrict candidates if minor delimiter (##) is found more recently than major delimiter ($$$)
@@ -237,14 +237,14 @@ class SequenceGenerator(nn.Module):
         print("restrict_cands: {}\ngenerated_cands: {}".format(restrict_cands, generated_cands))
 
         if any(restrict_cands):
-            print("valid_candidates: {}".format(valid_candidates))
+            print("valid_candidates: {}".format(valid_candidates.shape))
             for beam_idx, cand in enumerate(generated_cands):
                 valid_mask_list = []
                 ## If we need to restrict candidates, first find which candidates are still valid
                 if restrict_cands[beam_idx]:
                     ## If no candidate has been generated yet, allow the first subword of all candidates
                     if not cand:
-                        valid_mask_list = [list(set([v[0].item() for v in valid_candidates[0]]))]
+                        valid_mask_list = list(set([v[0].item() for v in valid_candidates[0]]))
                     else:
                         ## Need to find all candidates that start with what has been generated so far
                         ## and are longer than what's been generated
@@ -261,7 +261,8 @@ class SequenceGenerator(nn.Module):
                     valid_mask = torch.LongTensor(valid_mask_list)
                     print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
                     indices = torch.ones(len(valid_mask))
-                    ## Avoids masking all seen tokens, masks all others
+                    print("indices shape: {}\tindices: {}".format(indices.shape, indices))
+                    ## Avoids masking all valid tokens, masks all others
                     valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
                         indices, scores[beam_idx].size()).to(scores[beam_idx].device).to_dense().bool())
                     print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
