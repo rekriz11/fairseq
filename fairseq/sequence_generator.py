@@ -217,14 +217,14 @@ class SequenceGenerator(nn.Module):
             cur_tokens.reverse()
             ## Don't restrict candidates if either major or minor delimiter hasn't been generated yet
             try:
-                print("Major delimiter: {}".format(slot_delimiters[beam_idx][0]))
-                major_delim_index = cur_tokens.index(slot_delimiters[beam_idx][0])
+                print("Major delimiter: {}".format(slot_delimiters[0][0]))
+                major_delim_index = cur_tokens.index(slot_delimiters[0][0])
             except ValueError:
                 continue
 
             try:
-                print("Minor delimiter: {}".format(slot_delimiters[beam_idx][1]))
-                minor_delim_index = cur_tokens.index(slot_delimiters[beam_idx][1])
+                print("Minor delimiter: {}".format(slot_delimiters[0][1]))
+                minor_delim_index = cur_tokens.index(slot_delimiters[0][1])
             except ValueError:
                 continue
 
@@ -237,13 +237,14 @@ class SequenceGenerator(nn.Module):
         print("restrict_cands: {}\ngenerated_cands: {}".format(restrict_cands, generated_cands))
 
         if any(restrict_cands):
+            print("valid_candidates: {}".format(valid_candidates))
             for beam_idx, cand in enumerate(generated_cands):
                 valid_mask_list = []
                 ## If we need to restrict candidates, first find which candidates are still valid
                 if restrict_cands[beam_idx]:
                     ## If no candidate has been generated yet, allow the first subword of all candidates
                     if not cand:
-                        valid_mask_list = [list(set([v[0].item() for v in valid_candidates]))]
+                        valid_mask_list = [list(set([v[0].item() for v in valid_candidates[0]]))]
                     else:
                         ## Need to find all candidates that start with what has been generated so far
                         ## and are longer than what's been generated
@@ -254,8 +255,8 @@ class SequenceGenerator(nn.Module):
                         ## add delimiters and EOS as valid markers
                         finished = [v for v in valid_cands_step if v.size()[0] == len(cand)]
                         if finished != [] or valid_cands_step == []:
-                            valid_mask_list.append(slot_delimiters[beam_idx][0].item())
-                            valid_mask_list.append(slot_delimiters[beam_idx][1].item())
+                            valid_mask_list.append(slot_delimiters[0].item())
+                            valid_mask_list.append(slot_delimiters[1].item())
                             valid_mask_list.append(3)
                     valid_mask = torch.LongTensor(valid_mask_list)
                     print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
