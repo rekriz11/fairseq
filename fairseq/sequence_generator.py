@@ -212,14 +212,16 @@ class SequenceGenerator(nn.Module):
     def mask_vocab(self, scores, beam_idx, valid_mask_list):
         ## If there are no valid candidates, throw an error
         if valid_mask_list == []:
-            print("No valid candidates!")
-            a = bbb
-        valid_mask = torch.LongTensor(valid_mask_list)
-        indices = torch.ones(len(valid_mask))
-        ## Avoids masking all valid tokens, masks all others
-        valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
-            indices, scores.size()).to(scores.device).to_dense().bool())
-        scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
+            scores[beam_idx] = -float("inf")
+            #print("No valid candidates!")
+            #a = bbb
+        else:
+            valid_mask = torch.LongTensor(valid_mask_list)
+            indices = torch.ones(len(valid_mask))
+            ## Avoids masking all valid tokens, masks all others
+            valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
+                indices, scores.size()).to(scores.device).to_dense().bool())
+            scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
         return scores
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
@@ -268,7 +270,7 @@ class SequenceGenerator(nn.Module):
                 cur_cand.reverse()
                 generated_restricted_cands[beam_idx] = cur_cand
 
-        print("\n\nrestrict_cands: {}\ngenerated_restrict_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}".format(restrict_cands, \
+        print("\n\nrestrict_cands: {}\ngenerated_restrict_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
             generated_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
         for beam_idx, cand in enumerate(generated_forced_cands):
             valid_mask_list = []
@@ -281,8 +283,9 @@ class SequenceGenerator(nn.Module):
                     ## Check if forced candidate has been correctly generated so far
                     print("Correct forced candidate: {}, generated candidate so far: {}".format(forced, cand))
                     if forced[:len(cand)] != cand:
-                        print("Error generating forced candidate!!")
-                        a = bbb
+                        valid_mask_list = []
+                        #print("Error generating forced candidate!!")
+                        #a = bbb
                     if len(forced) > len(cand):
                         ## If forced candidate is unfinished, only allow model to generate
                         valid_mask_list = [[beam_idx, forced[len(cand)]]]
