@@ -277,8 +277,8 @@ class SequenceGenerator(nn.Module):
                 prev_cands.reverse()
                 prev_restricted_cands[beam_idx] = self.split_list(prev_cands, slot_delimiters[0][1].item())
 
-        print("\n\nrestrict_cands: {}\ncur_restricted_cands: {}\nprev_restricted_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
-            cur_restricted_cands, prev_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
+        #print("\n\nrestrict_cands: {}\ncur_restricted_cands: {}\nprev_restricted_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
+        #    cur_restricted_cands, prev_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
         for beam_idx, (forced_cand, restricted_cand, prev_cand) in enumerate(zip(generated_forced_cands, cur_restricted_cands, prev_restricted_cands)):
             valid_mask_list = []
             if restrict_cands[beam_idx]:
@@ -302,7 +302,7 @@ class SequenceGenerator(nn.Module):
                     ## add delimiters and EOS as valid markers
                     finished = [v for v in valid_cands_step if v.size()[0] == len(restricted_cand)]
                     if finished != []:
-                        print("Finished candidates: {}, number of forced candidates".format(finished, forced_cands[beam_idx]))
+                        #print("Finished candidates: {}, number of forced candidates".format(finished, forced_cands[beam_idx]))
                         if forced_cands[beam_idx] < len(forced_candidates[0]):
                             ## If we haven't generated all forced candidates, allow the major delimiter
                             valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
@@ -312,7 +312,7 @@ class SequenceGenerator(nn.Module):
                         else:
                             ## If we've generated all forced candidates, allow EOS
                             valid_mask_list.append([beam_idx, 3])
-                print("RESTRICTED, restricted_cand: {}, valid_mask_list: {}".format(restricted_cand, valid_mask_list))
+                #print("RESTRICTED, restricted_cand: {}, valid_mask_list: {}".format(restricted_cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             elif forced_cands[beam_idx]:
                 ## Subtract one from index to start at 0 (EDIT: subtracting one might be wrong?)
@@ -321,7 +321,7 @@ class SequenceGenerator(nn.Module):
                     valid_mask_list = [[beam_idx, forced[0]]]
                 else:
                     ## Check if forced candidate has been correctly generated so far
-                    print("Correct forced candidate: {}, generated candidate so far: {}".format(forced, forced_cand))
+                    #print("Correct forced candidate: {}, generated candidate so far: {}".format(forced, forced_cand))
                     if forced[:len(forced_cand)] != forced_cand:
                         valid_mask_list = []
                         #print("Error generating forced candidate!!")
@@ -339,10 +339,10 @@ class SequenceGenerator(nn.Module):
                         valid_mask_list = []
                         #print("ERROR, check what went wrong!!")
                         #a = bbb
-                print("FORCED, forced_cand: {}, valid_mask_list: {}".format(forced_cand, valid_mask_list))
+                #print("FORCED, forced_cand: {}, valid_mask_list: {}".format(forced_cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             else:
-                print("Error, there should always be exactly one or the other valid")
+                #print("Error, there should always be exactly one or the other valid")
                 a = bbb
 
         return scores
@@ -560,6 +560,7 @@ class SequenceGenerator(nn.Module):
                 lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
 
             cur_toks = [utils.strip_pad(tokens[ind], target_dictionary.pad()) for ind in range(beam_size)]
+            print(constraints['constraint_type'])
             if 'slot' in constraints['constraint_type']:
                 lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, cur_toks, constraints['disjoint'], constraints['forced'], constraints['delimiters'], constraints['constraint_type'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
@@ -759,11 +760,11 @@ class SequenceGenerator(nn.Module):
             scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
                 cand_scores, dim=1, index=active_hypos
             )
-            print("\nUpdated beam candidate: ")
+            '''print("\nUpdated beam candidate: ")
             for ind in range(beam_size):
                 new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
-                print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
+                print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))'''
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 
