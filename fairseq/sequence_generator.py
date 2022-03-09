@@ -279,8 +279,8 @@ class SequenceGenerator(nn.Module):
                 prev_cands.reverse()
                 prev_restricted_cands[beam_idx] = split_list(prev_cands, slot_delimiters[0][0].item())
 
-        print("\n\nrestrict_cands: {}\ncur_restricted_cands: {}\nprev_restricted_candidates: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
-            cur_restricted_cands, prev_restricted_candidates, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
+        print("\n\nrestrict_cands: {}\ncur_restricted_cands: {}\nprev_restricted_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
+            cur_restricted_cands, prev_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
         for beam_idx, (forced_cand, restricted_cand, prev_cand) in enumerate(zip(generated_forced_cands, cur_restricted_cands, prev_restricted_cands)):
             valid_mask_list = []
             if forced_cands[beam_idx]:
