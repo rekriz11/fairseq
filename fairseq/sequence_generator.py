@@ -264,16 +264,19 @@ class SequenceGenerator(nn.Module):
                             valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
                             valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                             valid_mask_list.append([beam_idx, 3])
-                        if valid_cands_step == []:
-                            print("No valid candidates!")
                     print("cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
-                    valid_mask = torch.LongTensor(valid_mask_list)
-                    #print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
-                    indices = torch.ones(len(valid_mask))
-                    ## Avoids masking all valid tokens, masks all others
-                    valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
-                        indices, scores.size()).to(scores.device).to_dense().bool())
-                    scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
+                    ## If there are no valid candidates, set everything to -inf
+                    if valid_mask_list == []:
+                        print("No valid candidates!")
+                        scores[beam_idx] = -float("inf")
+                    else:
+                        valid_mask = torch.LongTensor(valid_mask_list)
+                        #print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
+                        indices = torch.ones(len(valid_mask))
+                        ## Avoids masking all valid tokens, masks all others
+                        valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
+                            indices, scores.size()).to(scores.device).to_dense().bool())
+                        scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
                 else:
                     continue
         return scores
