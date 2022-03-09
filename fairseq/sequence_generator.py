@@ -244,13 +244,13 @@ class SequenceGenerator(nn.Module):
                 if restrict_cands[beam_idx]:
                     ## If no candidate has been generated yet, allow the first subword of all candidates
                     if not cand:
-                        valid_mask_list = list(set([[beam_idx, v[0].item()] for v in valid_candidates[0]]))
+                        valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0].item() for v in valid_candidates[0]]))]
                     else:
                         ## Need to find all candidates that start with what has been generated so far
                         ## and are longer than what's been generated
                         valid_cands_step = [v for v in valid_candidates if cand == v[:len(cand)]]
                         unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
-                        valid_mask_list = list(set([[beam_idx, v[0].item()] for v in unfinished]))
+                        valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0].item() for v in unfinished]))]
                         ## If there are finished candidates, or there are no valid candidates,
                         ## add delimiters and EOS as valid markers
                         finished = [v for v in valid_cands_step if v.size()[0] == len(cand)]
