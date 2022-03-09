@@ -210,7 +210,7 @@ class SequenceGenerator(nn.Module):
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, slot_delimiters):
-        #print("\nslot_delimiters: {}".format(slot_delimiters))
+        print("\nslot_delimiters: {}".format(slot_delimiters))
         restrict_cands, generated_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
             cur_tokens = tokens[beam_idx].tolist()
@@ -234,7 +234,7 @@ class SequenceGenerator(nn.Module):
                 cur_cand = cur_tokens[:minor_delim_index]
                 cur_cand.reverse()
                 generated_cands[beam_idx] = cur_cand
-        print("\nrestrict_cands: {}\ngenerated_cands: {}".format(restrict_cands, generated_cands))
+        print("restrict_cands: {}\ngenerated_cands: {}".format(restrict_cands, generated_cands))
 
         if any(restrict_cands):
             print("initial valid_candidates: {}".format(valid_candidates))
@@ -251,6 +251,7 @@ class SequenceGenerator(nn.Module):
                         print("\n\ncand: {}".format(cand))
                         print("[v[:len(cand)] for v in valid_candidates[0]]: {}\n\n".format([v[:len(cand)].tolist() for v in valid_candidates[0]]))
                         valid_cands_step = [v for v in valid_candidates[0] if cand == v[:len(cand)].tolist()]
+                        print("valid_cands_step: {}".format(valid_cands_step))
                         unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
                         valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[len(cand)].item() for v in unfinished]))]
                         ## If there are finished candidates, or there are no valid candidates,
