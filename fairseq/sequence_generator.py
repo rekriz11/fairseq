@@ -313,8 +313,8 @@ class SequenceGenerator(nn.Module):
                 print("RESTRICTED, restricted_cand: {}, valid_mask_list: {}".format(restricted_cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             elif forced_cands[beam_idx]:
-                ## Subtract one from index to start at 0 (EDIT: subtracting one was wrong!!)
-                forced = forced_candidates[0][forced_cands[beam_idx]].tolist()
+                ## Subtract one from index to start at 0 (EDIT: subtracting one might be wrong?)
+                forced = forced_candidates[0][forced_cands[beam_idx] - 1].tolist()
                 if not forced_cand:
                     valid_mask_list = [[beam_idx, forced[0]]]
                 else:
@@ -611,9 +611,9 @@ class SequenceGenerator(nn.Module):
                 original_batch_idxs,
             )
 
-            print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
+            #print("\ncand_beams: {}\ncand_indices: {}\ncand_scores: {}".format(cand_beams, cand_indices, cand_scores))
             cand_toks = [target_dictionary.string(torch.tensor([ind])) for ind in cand_indices[0]]
-            print("cand_toks: {}\tcand_scores: {}".format(cand_toks, cand_scores))
+            #print("cand_toks: {}\tcand_scores: {}".format(cand_toks, cand_scores))
             #print("EOS: {}: lprobs[eos]: {}".format(self.eos, lprobs[:, self.eos]))
             
             # cand_bbsz_idx contains beam indices for the top candidate
@@ -721,7 +721,7 @@ class SequenceGenerator(nn.Module):
             new_cands_to_ignore, active_hypos = torch.topk(
                 active_mask, k=beam_size, dim=1, largest=False
             )
-            print("active_hypos: {}\nnew_cands_to_ignore: {}".format(active_hypos, new_cands_to_ignore))
+            #print("active_hypos: {}\nnew_cands_to_ignore: {}".format(active_hypos, new_cands_to_ignore))
 
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]

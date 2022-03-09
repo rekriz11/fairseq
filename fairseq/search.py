@@ -490,7 +490,7 @@ class LexicallyConstrainedBeamSearch(Search):
             lprobs.view(batch_size, -1),
             self.num_cands,
         )
-        print("top_prediction: {}".format(top_prediction))
+        #print("top_prediction: {}".format(top_prediction))
         scores_buf, indices_buf = top_prediction
         # Project back into relative indices and beams
         beams_buf = indices_buf // vocab_size
