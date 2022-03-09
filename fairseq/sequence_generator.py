@@ -272,54 +272,54 @@ class SequenceGenerator(nn.Module):
 
         print("\n\nrestrict_cands: {}\ngenerated_restrict_cands: {}\ninitial valid_candidates: {}\nforced_cands: {}\ngenerated_forced_cands: {}\ninitial forced_candidates: {}\nslot_delimiters: {}\n".format(restrict_cands, \
             generated_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
-        for beam_idx, cand in enumerate(generated_forced_cands):
+        for beam_idx, (forced_cand, restricted_cand) in enumerate(zip(generated_forced_cands, generated_restricted_cands)):
             valid_mask_list = []
             if forced_cands[beam_idx]:
                 ## Subtract one from index to start at 0
                 forced = forced_candidates[0][forced_cands[beam_idx] - 1].tolist()
-                if not cand:
+                if not forced_cand:
                     valid_mask_list = [[beam_idx, forced[0]]]
                 else:
                     ## Check if forced candidate has been correctly generated so far
-                    print("Correct forced candidate: {}, generated candidate so far: {}".format(forced, cand))
-                    if forced[:len(cand)] != cand:
+                    print("Correct forced candidate: {}, generated candidate so far: {}".format(forced, forced_cand))
+                    if forced[:len(forced_cand)] != forced_cand:
                         valid_mask_list = []
                         #print("Error generating forced candidate!!")
                         #a = bbb
-                    if len(forced) > len(cand):
+                    if len(forced) > len(forced_cand):
                         ## If forced candidate is unfinished, only allow model to generate
-                        valid_mask_list = [[beam_idx, forced[len(cand)]]]
-                    elif len(forced) == len(cand) and forced_cands[beam_idx] == 1:
+                        valid_mask_list = [[beam_idx, forced[len(forced_cand)]]]
+                    elif len(forced) == len(forced_cand) and forced_cands[beam_idx] == 1:
                         ## If first candidate is finished, only allow model to generate major delimiter
                         valid_mask_list = [[beam_idx, slot_delimiters[0][0].item()]]
-                    elif len(forced) == len(cand) and forced_cands[beam_idx] > 1:
+                    elif len(forced) == len(forced_cand) and forced_cands[beam_idx] > 1:
                         ## If non-first candidate is finished, only allow model to generate minor delimiter
                         valid_mask_list = [[beam_idx, slot_delimiters[0][1].item()]]
                     else:
                         valid_mask_list = []
                         #print("ERROR, check what went wrong!!")
                         #a = bbb
-                print("FORCED, cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
+                print("FORCED, forced_cand: {}, valid_mask_list: {}".format(forced_cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             elif restrict_cands[beam_idx]:
                 ## If no candidate has been generated yet, allow the first subword of all candidates
-                if not cand:
+                if not restricted_cand:
                     valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0].item() for v in valid_candidates[0]]))]
                 else:
                     ## Need to find all candidates that start with what has been generated so far and are longer than what's been generated
-                    valid_cands_step = [v for v in valid_candidates[0] if cand == v[:len(cand)].tolist()]
+                    valid_cands_step = [v for v in valid_candidates[0] if restricted_cand == v[:len(restricted_cand)].tolist()]
                     #print("valid_cands_step: {}".format(valid_cands_step))
-                    unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
-                    valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[len(cand)].item() for v in unfinished]))]
+                    unfinished = [v for v in valid_cands_step if v.size()[0] > len(restricted_cand)]
+                    valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[len(restricted_cand)].item() for v in unfinished]))]
                     ## If there are finished candidates, or there are no valid candidates,
                     ## add delimiters and EOS as valid markers
-                    finished = [v for v in valid_cands_step if v.size()[0] == len(cand)]
+                    finished = [v for v in valid_cands_step if v.size()[0] == len(restricted_cand)]
                     if finished != []:
                         print("Finished candidates: {}".format(finished))
                         valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
                         valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                         valid_mask_list.append([beam_idx, 3])
-                print("RESTRICTED, cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
+                print("RESTRICTED, restricted_cand: {}, valid_mask_list: {}".format(restricted_cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             else:
                 print("Error, there should always be exactly one or the other valid")
