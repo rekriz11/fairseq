@@ -307,7 +307,7 @@ class SequenceGenerator(nn.Module):
                             ## If we haven't generated all forced candidates, allow the major delimiter
                             valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
                             ## If we allow multiple answers for a single slot, allow the minor delimiter
-                            if constraint_type = 'ordered_slot_multiple':
+                            if constraint_type == 'ordered_slot_multiple':
                                 valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                         else:
                             ## If we've generated all forced candidates, allow EOS
