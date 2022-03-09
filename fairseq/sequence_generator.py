@@ -276,7 +276,7 @@ class SequenceGenerator(nn.Module):
                 ## Subtract one from index to start at 0
                 forced = forced_candidates[0][forced_cands[beam_idx] - 1].tolist()
                 if not cand:
-                    valid_mask_list = [[beam_idx, forced[0].item()]]
+                    valid_mask_list = [[beam_idx, forced[0]]]
                 else:
                     ## Check if forced candidate has been correctly generated so far
                     print("Correct forced candidate: {}, generated candidate so far: {}".format(forced, cand))
