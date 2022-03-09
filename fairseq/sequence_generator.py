@@ -228,7 +228,7 @@ class SequenceGenerator(nn.Module):
     ## Splits list by a delimiter
     def split_list(self, listy, delimiter):
         split = [list(group) for k, group in groupby(listy, lambda x: x == delimiter) if not k][1:]
-        print("listy: {}, delimiter: {}, split: {}".format(listy, delimiter, split))
+        #print("listy: {}, delimiter: {}, split: {}".format(listy, delimiter, split))
         return split
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
@@ -261,14 +261,12 @@ class SequenceGenerator(nn.Module):
                 generated_forced_cands[beam_idx] = cur_cand
                 continue
 
-            ## Restrict to correct forced candidate if major delimiter is found more recently than minor delimiter
-            if major_delim_index < minor_delim_index:
-                ## To find the correct forced candidate index, split current tokens by major delimiter
-                forced_cand_index = tokens[beam_idx].tolist().count(slot_delimiters[0][0].item())
-                forced_cands[beam_idx] = forced_cand_index
-                cur_cand = cur_tokens[:major_delim_index]
-                cur_cand.reverse()
-                generated_forced_cands[beam_idx] = cur_cand
+            ## To track the correct forced candidate index, split current tokens by major delimiter
+            forced_cand_index = tokens[beam_idx].tolist().count(slot_delimiters[0][0].item())
+            forced_cands[beam_idx] = forced_cand_index
+            cur_cand = cur_tokens[:major_delim_index]
+            cur_cand.reverse()
+            generated_forced_cands[beam_idx] = cur_cand
 
             ## Restrict to valid candidates if minor delimiter (##) is found more recently than major delimiter ($$$)
             if minor_delim_index < major_delim_index:
@@ -285,9 +283,38 @@ class SequenceGenerator(nn.Module):
             cur_restricted_cands, prev_restricted_cands, valid_candidates, forced_cands, generated_forced_cands, forced_candidates, slot_delimiters))
         for beam_idx, (forced_cand, restricted_cand, prev_cand) in enumerate(zip(generated_forced_cands, cur_restricted_cands, prev_restricted_cands)):
             valid_mask_list = []
-            if forced_cands[beam_idx]:
-                ## Subtract one from index to start at 0
-                forced = forced_candidates[0][forced_cands[beam_idx] - 1].tolist()
+            if restrict_cands[beam_idx]:
+                ## Remove previously generated candidates from the list of valid candidates
+                cur_valid_candidates = [v.tolist() for v in valid_candidates[0]]
+                for cand in prev_cand:
+                    try:
+                        cur_valid_candidates.remove(cand)
+                    except ValueError:
+                        continue
+                ## If no candidate has been generated yet, allow the first subword of all candidates
+                if not restricted_cand:
+                    valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0] for v in cur_valid_candidates]))]
+                else:
+                    ## Need to find all candidates that start with what has been generated so far and are longer than what's been generated
+                    valid_cands_step = [v for v in valid_candidates[0] if restricted_cand == v[:len(restricted_cand)].tolist()]
+                    #print("valid_cands_step: {}".format(valid_cands_step))
+                    unfinished = [v for v in valid_cands_step if v.size()[0] > len(restricted_cand)]
+                    valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[len(restricted_cand)].item() for v in unfinished]))]
+                    ## If there are finished candidates, or there are no valid candidates,
+                    ## add delimiters and EOS as valid markers
+                    finished = [v for v in valid_cands_step if v.size()[0] == len(restricted_cand)]
+                    if finished != []:
+                        print("Finished candidates: {}, number of forced candidates".format(finished, forced_cands[beam_idx]))
+                        ## If we haven't generated all forced candidates, allow the major delimiter
+                        if forced_cands[beam_idx] < len(forced_candidates[0]) - 1:
+                            valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
+                        #valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
+                        valid_mask_list.append([beam_idx, 3])
+                print("RESTRICTED, restricted_cand: {}, valid_mask_list: {}".format(restricted_cand, valid_mask_list))
+                scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
+            elif forced_cands[beam_idx]:
+                ## Subtract one from index to start at 0 (EDIT: subtracting one was wrong!!)
+                forced = forced_candidates[0][forced_cands[beam_idx]].tolist()
                 if not forced_cand:
                     valid_mask_list = [[beam_idx, forced[0]]]
                 else:
@@ -311,33 +338,6 @@ class SequenceGenerator(nn.Module):
                         #print("ERROR, check what went wrong!!")
                         #a = bbb
                 print("FORCED, forced_cand: {}, valid_mask_list: {}".format(forced_cand, valid_mask_list))
-                scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
-            elif restrict_cands[beam_idx]:
-                ## Remove previously generated candidates from the list of valid candidates
-                cur_valid_candidates = [v.tolist() for v in valid_candidates[0]]
-                for cand in prev_cand:
-                    try:
-                        cur_valid_candidates.remove(cand)
-                    except ValueError:
-                        continue
-                ## If no candidate has been generated yet, allow the first subword of all candidates
-                if not restricted_cand:
-                    valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0] for v in cur_valid_candidates]))]
-                else:
-                    ## Need to find all candidates that start with what has been generated so far and are longer than what's been generated
-                    valid_cands_step = [v for v in valid_candidates[0] if restricted_cand == v[:len(restricted_cand)].tolist()]
-                    #print("valid_cands_step: {}".format(valid_cands_step))
-                    unfinished = [v for v in valid_cands_step if v.size()[0] > len(restricted_cand)]
-                    valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[len(restricted_cand)].item() for v in unfinished]))]
-                    ## If there are finished candidates, or there are no valid candidates,
-                    ## add delimiters and EOS as valid markers
-                    finished = [v for v in valid_cands_step if v.size()[0] == len(restricted_cand)]
-                    if finished != []:
-                        print("Finished candidates: {}".format(finished))
-                        valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
-                        #valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
-                        valid_mask_list.append([beam_idx, 3])
-                print("RESTRICTED, restricted_cand: {}, valid_mask_list: {}".format(restricted_cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             else:
                 print("Error, there should always be exactly one or the other valid")
