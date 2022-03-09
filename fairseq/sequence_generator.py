@@ -210,10 +210,63 @@ class SequenceGenerator(nn.Module):
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, slot_delimiters):
+        restrict_cands, generated_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
-            cur_tokens = tokens[beam_idx]
-            print(cur_tokens)
-            a = bbb
+            cur_tokens = tokens[beam_idx].tolist()
+            cur_tokens.reverse()
+            ## Don't restrict candidates if either major or minor delimiter hasn't been generated yet
+            try:
+                print("Major delimiter: {}".format(slot_delimiters[beam_idx][0]))
+                major_delim_index = cur_tokens.index(slot_delimiters[beam_idx][0])
+            except ValueError:
+                continue
+
+            try:
+                print("Minor delimiter: {}".format(slot_delimiters[beam_idx][1]))
+                minor_delim_index = cur_tokens.index(slot_delimiters[beam_idx][1])
+            except ValueError:
+                continue
+
+            ## Restrict candidates if minor delimiter (##) is found more recently than major delimiter ($$$)
+            if minor_delim_index < major_delim_index:
+                restrict_cands[beam_idx] = True
+                cur_cand = cur_tokens[:minor_delim_index]
+                cur_cand.reverse()
+                generated_cands[beam_idx] = cur_cand
+        print("restrict_cands: {}\ngenerated_cands: {}".format(restrict_cands, generated_cands))
+
+        if any(restrict_cands):
+            for beam_idx, cand in enumerate(generated_cands):
+                valid_mask_list = []
+                ## If we need to restrict candidates, first find which candidates are still valid
+                if restrict_cands[beam_idx]:
+                    ## If no candidate has been generated yet, allow the first subword of all candidates
+                    if not cand:
+                        valid_mask_list = [list(set([v[0].item() for v in valid_candidates]))]
+                    else:
+                        ## Need to find all candidates that start with what has been generated so far
+                        ## and are longer than what's been generated
+                        valid_cands_step = [v for v in valid_candidates if cand == v[:len(cand)]]
+                        unfinished = [v for v in valid_cands_step if v.size()[0] > len(cand)]
+                        valid_mask_list = list(set([v[0].item() for v in unfinished]))
+                        ## If there are finished candidates, or there are no valid candidates,
+                        ## add delimiters and EOS as valid markers
+                        finished = [v for v in valid_cands_step if v.size()[0] == len(cand)]
+                        if finished != [] or if valid_cands_step == []:
+                            valid_mask_list.append(slot_delimiters[beam_idx][0].item())
+                            valid_mask_list.append(slot_delimiters[beam_idx][1].item())
+                            valid_mask_list.append(3)
+                    valid_mask = torch.LongTensor(valid_mask_list)
+                    print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
+                    indices = torch.ones(len(valid_mask))
+                    ## Avoids masking all seen tokens, masks all others
+                    valid_mask = ~(torch.sparse.LongTensor(valid_mask.t(), \
+                        indices, scores[beam_idx].size()).to(scores[beam_idx].device).to_dense().bool())
+                    print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
+                    scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask, -float("inf"))
+                    a = bbb
+                else:
+                    continue
         return scores
 
     @torch.no_grad()
