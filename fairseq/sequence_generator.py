@@ -72,6 +72,7 @@ class SequenceGenerator(nn.Module):
         self.pad = tgt_dict.pad()
         self.unk = tgt_dict.unk()
         self.eos = tgt_dict.eos() if eos is None else eos
+        print("self.eos: ".format(self.eos))
         self.symbols_to_strip_from_output = (
             symbols_to_strip_from_output.union({self.eos})
             if symbols_to_strip_from_output is not None
@@ -318,7 +319,7 @@ class SequenceGenerator(nn.Module):
                         print("Finished candidates: {}".format(finished))
                         valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
                         valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
-                        valid_mask_list.append([beam_idx, 3])
+                        valid_mask_list.append([beam_idx, self.eos])
                 print("restriced cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
                 scores = mask_vocab(scores, beam_idx, valid_mask_list)
             else:
