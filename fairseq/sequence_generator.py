@@ -237,7 +237,7 @@ class SequenceGenerator(nn.Module):
         print("restrict_cands: {}\ngenerated_cands: {}".format(restrict_cands, generated_cands))
 
         if any(restrict_cands):
-            print("valid_candidates: {}".format(valid_candidates.shape))
+            print("valid_candidates: {}".format(valid_candidates))
             for beam_idx, cand in enumerate(generated_cands):
                 valid_mask_list = []
                 ## If we need to restrict candidates, first find which candidates are still valid
