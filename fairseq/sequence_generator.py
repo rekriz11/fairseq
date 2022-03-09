@@ -252,7 +252,7 @@ class SequenceGenerator(nn.Module):
                         ## If there are finished candidates, or there are no valid candidates,
                         ## add delimiters and EOS as valid markers
                         finished = [v for v in valid_cands_step if v.size()[0] == len(cand)]
-                        if finished != [] or if valid_cands_step == []:
+                        if finished != [] or valid_cands_step == []:
                             valid_mask_list.append(slot_delimiters[beam_idx][0].item())
                             valid_mask_list.append(slot_delimiters[beam_idx][1].item())
                             valid_mask_list.append(3)
