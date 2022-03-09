@@ -269,6 +269,7 @@ class SequenceGenerator(nn.Module):
                     if valid_mask_list == []:
                         print("No valid candidates!")
                         scores[beam_idx] = -float("inf")
+                        a = bbb
                     else:
                         valid_mask = torch.LongTensor(valid_mask_list)
                         #print("valid_mask shape: {}\tvalid_mask: {}".format(valid_mask.shape, valid_mask))
