@@ -316,7 +316,10 @@ class SequenceGenerator(nn.Module):
                 ## Remove previously generated candidates from the list of valid candidates
                 cur_valid_candidates = [v.tolist() for v in valid_candidates[0]]
                 for cand in prev_cand:
-                    cur_valid_candidates.remove(cand)
+                    try:
+                        cur_valid_candidates.remove(cand)
+                    except ValueError:
+                        continue
                 ## If no candidate has been generated yet, allow the first subword of all candidates
                 if not restricted_cand:
                     valid_mask_list = [[beam_idx, v2] for v2 in list(set([v[0] for v in cur_valid_candidates]))]
@@ -332,7 +335,7 @@ class SequenceGenerator(nn.Module):
                     if finished != []:
                         print("Finished candidates: {}".format(finished))
                         valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
-                        valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
+                        #valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                         valid_mask_list.append([beam_idx, 3])
                 print("RESTRICTED, restricted_cand: {}, valid_mask_list: {}".format(restricted_cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
