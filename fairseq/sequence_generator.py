@@ -262,7 +262,7 @@ class SequenceGenerator(nn.Module):
                 continue
 
             ## To track the correct forced candidate index, split current tokens by major delimiter
-            forced_cand_index = tokens[beam_idx].tolist().count(slot_delimiters[0][0].item())
+            forced_cand_index = tokens[beam_idx].tolist().count(slot_delimiters[0][0].item()) + 1
             forced_cands[beam_idx] = forced_cand_index
             cur_cand = cur_tokens[:major_delim_index]
             cur_cand.reverse()
