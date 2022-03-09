@@ -271,7 +271,7 @@ class LexicallyConstrainedBeamSearch(Search):
         self.constraint_states = []
         self.negative_constraint_states = []
         for constraint_tensor in batch_constraints:
-            if self.representation in ["ordered", "ordered_mask"]:
+            if self.representation in ["ordered", "ordered_mask", "ordered_slot_single", "ordered_slot_multiple"]:
                 constraint_state = OrderedConstraintState.create(constraint_tensor)
             elif self.representation == ["unordered", "unordered_mask"]:
                 constraint_state = UnorderedConstraintState.create(constraint_tensor)
