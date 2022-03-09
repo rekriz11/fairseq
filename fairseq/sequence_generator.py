@@ -210,22 +210,22 @@ class SequenceGenerator(nn.Module):
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, slot_delimiters):
-        print("slot_delimiters: {}".format(slot_delimiters))
+        print("\nslot_delimiters: {}".format(slot_delimiters))
         restrict_cands, generated_cands = [False for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
             cur_tokens = tokens[beam_idx].tolist()
             cur_tokens.reverse()
             ## Don't restrict candidates if either major or minor delimiter hasn't been generated yet
             try:
-                print("Major delimiter: {}".format(slot_delimiters[0][0]))
                 major_delim_index = cur_tokens.index(slot_delimiters[0][0])
             except ValueError:
+                print("Major delimiter {} not found in candidate {}".format(slot_delimiters[0][0].item(), tokens[beam_idx]))
                 continue
 
             try:
-                print("Minor delimiter: {}".format(slot_delimiters[0][1]))
                 minor_delim_index = cur_tokens.index(slot_delimiters[0][1])
             except ValueError:
+                print("Minor delimiter {} not found in candidate {}".format(slot_delimiters[0][1].item(), tokens[beam_idx]))
                 continue
 
             ## Restrict candidates if minor delimiter (##) is found more recently than major delimiter ($$$)
@@ -691,7 +691,6 @@ class SequenceGenerator(nn.Module):
                 new_toks = utils.strip_pad(tokens[ind], target_dictionary.pad())
                 new_scores = scores[ind][scores[ind].ne(0.0)]
                 print("{}\t{}\t{}".format(ind, new_scores, target_dictionary.string(new_toks)))
-            a = bbb
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 
