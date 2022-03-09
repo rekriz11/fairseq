@@ -374,8 +374,6 @@ class SequenceGenerator(nn.Module):
         bos_token: Optional[int] = None,
         target_dictionary = None
     ):
-        print("Constraint_check: {}".format(constraints))
-        a = bbb
         incremental_states = torch.jit.annotate(
             List[Dict[str, Dict[str, Optional[Tensor]]]],
             [
@@ -562,7 +560,7 @@ class SequenceGenerator(nn.Module):
                 lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
 
             cur_toks = [utils.strip_pad(tokens[ind], target_dictionary.pad()) for ind in range(beam_size)]
-            print("constraint_type: ".format(constraints['constraint_type']))
+            print("constraint_type: {}".format(constraints['constraint_type']))
             if 'slot' in constraints['constraint_type']:
                 lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, cur_toks, constraints['disjoint'], constraints['forced'], constraints['delimiters'], constraints['constraint_type'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))

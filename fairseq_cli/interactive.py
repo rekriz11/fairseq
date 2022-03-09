@@ -203,7 +203,6 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         constraint_type = batch.get("constraint_type", None)
         if constraint_type is not None:
             constraint_type = constraint_type[0]
-        print("constraint type check 3: {}".format(constraint_type))
 
         yield Batch(
             ids=ids,
@@ -347,7 +346,6 @@ def main(cfg: FairseqConfig):
                 constraints_dict['disjoint'] = disjoint_slot_constraints
                 constraints_dict['delimiters'] = slot_delimiters
                 constraints_dict['constraint_type'] = constraint_type
-                print("constraint type check 4: {}".format(constraints_dict['constraint_type']))
 
             else:
                 constraints_dict = None
