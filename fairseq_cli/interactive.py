@@ -58,6 +58,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
     #print("cfg.generation.constraints: {}".format(cfg.generation.constraints))
 
     if cfg.generation.constraints:
+        print("Initial constraint type: {}".format(cfg.generation.constraints))
         # Strip (tab-delimited) contraints and negative constraints, if present, from input lines,
         # "&&"-delimited two types of constraint,
         # store them in batch_constraints and batch_negative_constraints
