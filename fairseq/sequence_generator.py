@@ -283,13 +283,13 @@ class SequenceGenerator(nn.Module):
                     if forced[:len(cand)] != cand:
                         print("Error generating forced candidate!!")
                         a = bbb
-                    if forced[0] > len(cand):
+                    if len(forced[0]) > len(cand):
                         ## If forced candidate is unfinished, only allow model to generate
-                        valid_mask_list = [[beam_idx, forced[len(cand)].item()]]
-                    elif forced[0] == len(cand) and forced_cands[beam_idx] == 1:
+                        valid_mask_list = [[beam_idx, forced[len(cand)]]]
+                    elif len(forced[0]) == len(cand) and forced_cands[beam_idx] == 1:
                         ## If first candidate is finished, only allow model to generate major delimiter
                         valid_mask_list = [[beam_idx, slot_delimiters[0][0].item()]]
-                    elif forced[0] == len(cand) and forced_cands[beam_idx] > 1:
+                    elif len(forced[0]) == len(cand) and forced_cands[beam_idx] > 1:
                         ## If non-first candidate is finished, only allow model to generate minor delimiter
                         valid_mask_list = [[beam_idx, slot_delimiters[0][1].item()]]
                     else:
