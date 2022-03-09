@@ -232,9 +232,7 @@ class SequenceGenerator(nn.Module):
         return split
 
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
-    def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, forced_candidates, slot_delimiters):
-        if forced_candidates == [[]]:
-            return scores
+    def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, forced_candidates, slot_delimiters, constraint_type):
         restrict_cands, prev_restricted_cands, cur_restricted_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         forced_cands, generated_forced_cands = [0 for i in range(scores.shape[0])], [[] for i in range(scores.shape[0])]
         for beam_idx in range(scores.shape[0]):
@@ -308,7 +306,9 @@ class SequenceGenerator(nn.Module):
                         if forced_cands[beam_idx] < len(forced_candidates[0]):
                             ## If we haven't generated all forced candidates, allow the major delimiter
                             valid_mask_list.append([beam_idx, slot_delimiters[0][0].item()])
-                            #valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
+                            ## If we allow multiple answers for a single slot, allow the minor delimiter
+                            if constraint_type = 'ordered_slot_multiple':
+                                valid_mask_list.append([beam_idx, slot_delimiters[0][1].item()])
                         else:
                             ## If we've generated all forced candidates, allow EOS
                             valid_mask_list.append([beam_idx, 3])
@@ -556,10 +556,12 @@ class SequenceGenerator(nn.Module):
             #print("lprobs shape: {}".format(lprobs.shape))
             #print("negative_constraints: {}".format(constraints['negative']))
             #print("lprobs before masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
-            lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
+            if 'mask' in constraints['constraint_type']:
+                lprobs = self.set_scores_to_inf_for_unseen_tokens(lprobs, constraints['mask'])
 
             cur_toks = [utils.strip_pad(tokens[ind], target_dictionary.pad()) for ind in range(beam_size)]
-            lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, cur_toks, constraints['disjoint'], constraints['forced'], constraints['delimiters'])
+            if 'slot' in constraints['constraint_type']:
+                lprobs = self.set_scores_to_inf_for_invalid_candidates(lprobs, cur_toks, constraints['disjoint'], constraints['forced'], constraints['delimiters'], constraints['constraint_type'])
             #print("lprobs after masking 56574: {}\nand 35768: {}".format(lprobs[:, 56573:56576], lprobs[:, 35767:35770]))
             
             # handle max length constraint

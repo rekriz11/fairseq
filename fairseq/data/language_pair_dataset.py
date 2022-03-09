@@ -175,6 +175,8 @@ def collate(
         batch["disjoint_slot_constraints"] = [sample.get("disjoint_slot_constraints") for sample in samples]
     if samples[0].get("slot_delimiters", None) is not None:
         batch["slot_delimiters"] = [sample.get("slot_delimiters") for sample in samples]
+    if samples[0].get("constraint_type", None) is not None:
+        batch["constraint_type"] = [sample.get("constraint_type") for sample in samples]
 
     return batch
 
@@ -357,6 +359,7 @@ class LanguagePairDataset(FairseqDataset):
             example["forced_slot_constraints"] = self.constraints["forced"][index]
             example["disjoint_slot_constraints"] = self.constraints["disjoint"][index]
             example["slot_delimiters"] = self.constraints["delimiters"][index]
+            example["constraint_type"] = self.constraints["constraint_type"][index]
         return example
 
     def __len__(self):

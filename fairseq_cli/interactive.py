@@ -35,7 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger("fairseq_cli.interactive")
 
 
-Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints negative_constraints mask_constraints forced_slot_constraints disjoint_slot_constraints slot_delimiters")
+Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints negative_constraints mask_constraints forced_slot_constraints disjoint_slot_constraints slot_delimiters constraint_type")
 Translation = namedtuple("Translation", "src_str hypos pos_scores alignments")
 
 
@@ -175,7 +175,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         constraints_tensor = pack_constraints(batch_constraints)
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
         constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": batch_mask_constraints, \
-        'forced': batch_forced_slot_constraints, 'disjoint': batch_disjoint_slot_constraints, 'delimiters': batch_slot_delimiters}
+        'forced': batch_forced_slot_constraints, 'disjoint': batch_disjoint_slot_constraints, 'delimiters': batch_slot_delimiters, 'constraint_type': cfg.generation.constraints}
     else:
         constraints = None
 
@@ -200,6 +200,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         forced_slot_constraints = batch.get("forced_slot_constraints", None)
         disjoint_slot_constraints = batch.get("disjoint_slot_constraints", None)
         slot_delimiters = batch.get("slot_delimiters", None)
+        constraint_type = batch.get("constraint_type", None)
 
         yield Batch(
             ids=ids,
@@ -210,7 +211,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
             mask_constraints=mask_constraints,
             forced_slot_constraints=forced_slot_constraints,
             disjoint_slot_constraints=disjoint_slot_constraints,
-            slot_delimiters=slot_delimiters
+            slot_delimiters=slot_delimiters,
+            constraint_type=constraint_type
         )
 
 
@@ -325,6 +327,7 @@ def main(cfg: FairseqConfig):
             forced_slot_constraints = batch.forced_slot_constraints
             disjoint_slot_constraints = batch.disjoint_slot_constraints
             slot_delimiters = batch.slot_delimiters
+            constraint_type = batch.constraint_type
             if use_cuda:
                 src_tokens = src_tokens.cuda()
                 src_lengths = src_lengths.cuda()
@@ -340,6 +343,7 @@ def main(cfg: FairseqConfig):
                 constraints_dict['forced'] = forced_slot_constraints
                 constraints_dict['disjoint'] = disjoint_slot_constraints
                 constraints_dict['delimiters'] = slot_delimiters
+                constraints_dict['constraint_type'] = constraint_type
 
             else:
                 constraints_dict = None
