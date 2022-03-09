@@ -296,8 +296,9 @@ class SequenceGenerator(nn.Module):
                         ## If non-first candidate is finished, only allow model to generate minor delimiter
                         valid_mask_list = [[beam_idx, slot_delimiters[0][1].item()]]
                     else:
-                        print("ERROR, check what went wrong!!")
-                        a = bbb
+                        valid_mask_list = []
+                        #print("ERROR, check what went wrong!!")
+                        #a = bbb
                 print("FORCED, cand: {}, valid_mask_list: {}".format(cand, valid_mask_list))
                 scores = self.mask_vocab(scores, beam_idx, valid_mask_list)
             elif restrict_cands[beam_idx]:
