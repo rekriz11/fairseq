@@ -201,7 +201,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         disjoint_slot_constraints = batch.get("disjoint_slot_constraints", None)
         slot_delimiters = batch.get("slot_delimiters", None)
         constraint_type = batch.get("constraint_type", None)
-        print("constraint type check 3: {}".format(batch['constraint_type']))
+        print("constraint type check 3: {}".format(constraint_type))
 
         yield Batch(
             ids=ids,
@@ -345,7 +345,7 @@ def main(cfg: FairseqConfig):
                 constraints_dict['disjoint'] = disjoint_slot_constraints
                 constraints_dict['delimiters'] = slot_delimiters
                 constraints_dict['constraint_type'] = constraint_type
-                print("constraint type check 4: {}".format(constraints['constraint_type']))
+                print("constraint type check 4: {}".format(constraints_dict['constraint_type']))
 
             else:
                 constraints_dict = None
