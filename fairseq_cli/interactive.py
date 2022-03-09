@@ -177,6 +177,7 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         negative_constraints_tensor = pack_constraints(batch_negative_constraints)
         constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor, "mask": batch_mask_constraints, \
         'forced': batch_forced_slot_constraints, 'disjoint': batch_disjoint_slot_constraints, 'delimiters': batch_slot_delimiters, 'constraint_type': cfg.generation.constraints}
+        print("constraint type check 2: {}".format(constraints['constraint_type']))
     else:
         constraints = None
 
