@@ -274,22 +274,22 @@ class SequenceGenerator(nn.Module):
             valid_mask_list = []
             if forced_cands[beam_idx]:
                 ## Subtract one from index to start at 0
-                forced = forced_candidates[forced_cands[beam_idx] - 1]
+                forced = forced_candidates[0][forced_cands[beam_idx] - 1]
                 if not cand:
-                    valid_mask_list = [[beam_idx, forced[0]]]
+                    valid_mask_list = [[beam_idx, forced[0].item()]]
                 else:
                     ## Check if forced candidate has been correctly generated so far
                     print("Correct forced candidate: {}, generated candidate so far: {}".format(forced, cand))
                     if forced[:len(cand)] != cand:
                         print("Error generating forced candidate!!")
                         a = bbb
-                    if len(forced[0]) > len(cand):
+                    if forced.size(0) > len(cand):
                         ## If forced candidate is unfinished, only allow model to generate
                         valid_mask_list = [[beam_idx, forced[len(cand)]]]
-                    elif len(forced[0]) == len(cand) and forced_cands[beam_idx] == 1:
+                    elif forced.size() == len(cand) and forced_cands[beam_idx] == 1:
                         ## If first candidate is finished, only allow model to generate major delimiter
                         valid_mask_list = [[beam_idx, slot_delimiters[0][0].item()]]
-                    elif len(forced[0]) == len(cand) and forced_cands[beam_idx] > 1:
+                    elif forced[0].size() == len(cand) and forced_cands[beam_idx] > 1:
                         ## If non-first candidate is finished, only allow model to generate minor delimiter
                         valid_mask_list = [[beam_idx, slot_delimiters[0][1].item()]]
                     else:
