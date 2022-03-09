@@ -14,6 +14,7 @@ from fairseq.data import data_utils
 from fairseq.models import FairseqIncrementalDecoder
 from torch import Tensor
 from fairseq.ngram_repeat_block import NGramRepeatBlock
+from itertools import groupby
 
 
 class SequenceGenerator(nn.Module):
@@ -224,6 +225,9 @@ class SequenceGenerator(nn.Module):
             scores[beam_idx] = scores[beam_idx].masked_fill(valid_mask[beam_idx], -float("inf"))
         return scores
 
+    def split_list(list, delimiter):
+        return [list(group) for k, group in groupby(a, lambda x: x == 1)]
+
     ## Added constrained generation helper to only allow generation of valid candidates after delimiter
     def set_scores_to_inf_for_invalid_candidates(self, scores, tokens, valid_candidates, forced_candidates, slot_delimiters):
         if forced_candidates == [[]]:
@@ -257,7 +261,7 @@ class SequenceGenerator(nn.Module):
             ## Restrict to correct forced candidate if major delimiter is found more recently than minor delimiter
             if major_delim_index < minor_delim_index:
                 ## To find the correct forced candidate index, split current tokens by major delimiter
-                forced_cand_index = len(tokens[beam_idx].tolist().split(slot_delimiters[0][0]))
+                forced_cand_index = tokens[beam_idx].tolist().count(slot_delimiters[0][0].item())
                 forced_cands[beam_idx] = forced_cand_index
                 cur_cand = cur_tokens[:major_delim_index]
                 cur_cand.reverse()
